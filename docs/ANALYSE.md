@@ -119,3 +119,11 @@ Effort indicatif : **S** = < ½ j · **M** = ½–1 j · **L** = 1–3 j.
 **Phase 0** (rapide) → **Phase 1** (Postgres + Decimal, à faire d'un bloc car les deux touchent le schéma) → **Phase 2** (photos, puis auth quand on ouvre à d'autres utilisateurs) → **Phases 3–4** en continu.
 
 > La Phase 1 est le vrai jalon « prod-ready » côté données. L'authentification (Phase 2) est le prérequis pour toute ouverture commerciale.
+
+---
+
+## 6. Journal des évolutions
+
+### 2026-07-17
+- **🐛 Correctif — date d'achat basculant dans le mois en cours.** `reconcilierAchat` (`lib/services/animaux.ts`) utilisait `d.dateEntree ?? new Date()` : dès que la date d'entrée était vide à l'enregistrement (typiquement en modifiant une bête), la date du mouvement comptable d'achat était réécrite à *aujourd'hui*. Désormais, en mise à jour on **conserve la date existante** du mouvement, et la date d'entrée est **obligatoire pour un achat** (validée côté action `app/actions/animaux.ts` + champ requis dans `components/animal-form.tsx`). La vente n'était pas concernée (pas de fallback).
+- **✨ Comptabilité « toutes les années ».** Le sélecteur de période propose une option **Toutes les années** : totaux cumulés, graphe **par année** (au lieu de par mois), répartition par catégorie et journal sur l'ensemble des exercices. Nouveau `bilanGlobal()` (`lib/services/comptabilite.ts`), `BilanChart` généralisé (points mois **ou** années). ⚠️ Piège rencontré : la constante `TOUTES_ANNEES` doit vivre dans `lib/constants.ts` (module neutre) et non dans un composant `"use client"` — sinon, importée dans un Server Component, elle devient une référence proxy et la comparaison échoue silencieusement.

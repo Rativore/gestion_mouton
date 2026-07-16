@@ -1,5 +1,6 @@
 import {
   bilanAnnuel,
+  bilanGlobal,
   listerAnnees,
   listerMouvements,
 } from "@/lib/services/comptabilite";
@@ -11,11 +12,12 @@ import {
   Badge,
   LinkButton,
 } from "@/components/ui";
-import { BilanChart } from "@/components/bilan-chart";
+import { BilanChart, type PointGraphe } from "@/components/bilan-chart";
 import { AnneeSelect } from "@/components/annee-select";
 import { ConfirmButton } from "@/components/confirm-button";
+import { TOUTES_ANNEES } from "@/lib/constants";
 import { getDevise } from "@/lib/services/parametres";
-import { formatMontant, formatDate } from "@/lib/utils";
+import { formatMontant, formatDate, MOIS_COURTS } from "@/lib/utils";
 
 export default async function ComptabilitePage({
   searchParams,
@@ -24,21 +26,43 @@ export default async function ComptabilitePage({
 }) {
   const sp = await searchParams;
   const annees = await listerAnnees();
-  const annee = Number(sp.annee) || annees[0];
+  const toutes = sp.annee === TOUTES_ANNEES;
+  const annee = toutes ? null : Number(sp.annee) || annees[0];
 
   const [bilan, mouvements, devise] = await Promise.all([
-    bilanAnnuel(annee),
-    listerMouvements({ annee }),
+    toutes ? bilanGlobal() : bilanAnnuel(annee!),
+    listerMouvements(toutes ? {} : { annee: annee! }),
     getDevise(),
   ]);
   const fmt = (n: number | null | undefined) => formatMontant(n, devise);
+
+  // Points du graphe : par année en mode global, par mois pour une année.
+  const points: PointGraphe[] = toutes
+    ? "parAnnee" in bilan
+      ? bilan.parAnnee.map((a) => ({
+          label: String(a.annee),
+          gains: a.gains,
+          depenses: a.depenses,
+        }))
+      : []
+    : "parMois" in bilan
+      ? bilan.parMois.map((m) => ({
+          label: MOIS_COURTS[m.mois - 1],
+          gains: m.gains,
+          depenses: m.depenses,
+        }))
+      : [];
+
+  const libellePeriode = toutes ? "toutes les années" : String(annee);
 
   return (
     <>
       <PageHeader
         titre="Comptabilité"
         sousTitre="Suivi des gains et dépenses, à l'année et mois par mois"
-        action={<AnneeSelect annees={annees} valeur={annee} />}
+        action={
+          <AnneeSelect annees={annees} valeur={toutes ? TOUTES_ANNEES : annee!} />
+        }
       />
 
       <div className="space-y-6">
@@ -57,8 +81,10 @@ export default async function ComptabilitePage({
         </div>
 
         <Card>
-          <h2 className="mb-4 font-semibold">Évolution mensuelle {annee}</h2>
-          <BilanChart parMois={bilan.parMois} />
+          <h2 className="mb-4 font-semibold">
+            {toutes ? "Évolution par année" : `Évolution mensuelle ${annee}`}
+          </h2>
+          <BilanChart points={points} />
         </Card>
 
         {bilan.parCategorie.length > 0 && (
@@ -91,14 +117,14 @@ export default async function ComptabilitePage({
 
         <Card>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">Mouvements {annee}</h2>
+            <h2 className="font-semibold">Mouvements {libellePeriode}</h2>
             <LinkButton href="/ventes" variant="neutral">
               + Saisir
             </LinkButton>
           </div>
           {mouvements.length === 0 ? (
             <p className="text-sm text-muted">
-              Aucun mouvement enregistré pour cette année. Ajoutez-en depuis
+              Aucun mouvement enregistré pour cette période. Ajoutez-en depuis
               «&nbsp;Gains / Dépenses&nbsp;».
             </p>
           ) : (

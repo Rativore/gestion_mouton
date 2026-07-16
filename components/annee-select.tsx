@@ -1,8 +1,15 @@
 "use client";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { TOUTES_ANNEES } from "@/lib/constants";
 
-export function AnneeSelect({ annees, valeur }: { annees: number[]; valeur: number }) {
+export function AnneeSelect({
+  annees,
+  valeur,
+}: {
+  annees: number[];
+  valeur: number | typeof TOUTES_ANNEES;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -18,6 +25,7 @@ export function AnneeSelect({ annees, valeur }: { annees: number[]; valeur: numb
       className="field w-auto"
       aria-label="Année"
     >
+      <option value={TOUTES_ANNEES}>Toutes les années</option>
       {annees.map((a) => (
         <option key={a} value={a}>
           {a}

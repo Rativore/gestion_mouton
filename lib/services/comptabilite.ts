@@ -110,6 +110,64 @@ export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
   };
 }
 
+export type BilanAnnee = {
+  annee: number;
+  gains: number;
+  depenses: number;
+  solde: number;
+};
+
+export type BilanGlobal = {
+  gains: number;
+  depenses: number;
+  solde: number;
+  parAnnee: BilanAnnee[];
+  parCategorie: { typeFlux: string; categorie: string; total: number }[];
+};
+
+/** Agrège gains/dépenses sur toutes les années, année par année et par catégorie. */
+export async function bilanGlobal(): Promise<BilanGlobal> {
+  const mouvements = await prisma.mouvementComptable.findMany({
+    select: { date: true, typeFlux: true, montant: true, categorie: true },
+  });
+
+  const anneeMap = new Map<number, BilanAnnee>();
+  const categorieMap = new Map<string, number>();
+  let gains = 0;
+  let depenses = 0;
+
+  for (const m of mouvements) {
+    const an = m.date.getFullYear();
+    let bilan = anneeMap.get(an);
+    if (!bilan) {
+      bilan = { annee: an, gains: 0, depenses: 0, solde: 0 };
+      anneeMap.set(an, bilan);
+    }
+    if (m.typeFlux === "gain") {
+      bilan.gains += m.montant;
+      gains += m.montant;
+    } else {
+      bilan.depenses += m.montant;
+      depenses += m.montant;
+    }
+    const cle = `${m.typeFlux}::${m.categorie}`;
+    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + m.montant);
+  }
+
+  const parAnnee = [...anneeMap.values()]
+    .map((b) => ({ ...b, solde: b.gains - b.depenses }))
+    .sort((a, b) => a.annee - b.annee);
+
+  const parCategorie = [...categorieMap.entries()]
+    .map(([cle, total]) => {
+      const [typeFlux, categorie] = cle.split("::");
+      return { typeFlux, categorie, total };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return { gains, depenses, solde: gains - depenses, parAnnee, parCategorie };
+}
+
 export async function creerMouvement(data: {
   typeFlux: string;
   categorie: string;

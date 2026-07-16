@@ -14,7 +14,7 @@ Point d'entrée de la doc du projet. **À lire en premier pour reprendre rapidem
 Application de **gestion, traçabilité et comptabilité** d'un élevage de moutons / chèvres :
 - **Troupeau** : fiche par animal (identité, filiation, santé, provenance, photo), onglets par espèce + « Vendus / Morts », liste triable.
 - **Achat / Vente** : point de saisie unique. Achat = dépense (rouge), Vente = gain (vert). Un achat/vente d'animal crée/sort la bête ET le mouvement comptable lié. Historique chronologique coloré.
-- **Comptabilité** : bilan annuel + mensuel (graphe), répartition par catégorie, journal des mouvements.
+- **Comptabilité** : bilan par année (graphe mensuel) **ou toutes années confondues** (graphe par année) via le sélecteur, répartition par catégorie, journal des mouvements.
 - **Réglages** : devise, espèces d'animaux, catégories de gains/dépenses.
 
 Cible : web responsive (mono-utilisateur aujourd'hui), pensé pour évoluer en produit commercial.

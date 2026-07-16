@@ -93,6 +93,9 @@ export const DEVISES = [
 
 export const DEVISE_DEFAUT = "EUR";
 
+/** Valeur du sélecteur de période « toutes les années » (compta). */
+export const TOUTES_ANNEES = "toutes";
+
 export function labelDe(
   liste: readonly { value: string; label: string }[],
   value: string | null | undefined,
