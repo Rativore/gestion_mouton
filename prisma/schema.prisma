@@ -1,0 +1,131 @@
+// Schéma de données — Gestion / traçabilité / comptabilité d'un troupeau
+// Base SQLite pour le MVP, portable vers PostgreSQL plus tard.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Un animal du troupeau (mouton ou chèvre).
+model Animal {
+  id            String    @id @default(cuid())
+  numero        String    @unique
+  espece        String // "mouton" | "chevre"
+  race          String?
+  sexe          String? // "M" | "F"
+  dateNaissance DateTime?
+  couleur       String?
+  signes        String? // signes distinctifs
+  photoUrl      String?
+  statut        String    @default("present") // "present" | "vendu" | "mort"
+  note          String?
+
+  // Provenance / entrée dans le troupeau
+  origine    String    @default("naissance") // "naissance" | "achat"
+  dateEntree DateTime?
+  coutAchat  Float? // coût d'achat (si acheté), sert au calcul de marge
+
+  // Filiation
+  mereId      String?
+  mere        Animal?  @relation("Mere", fields: [mereId], references: [id])
+  enfantsMere Animal[] @relation("Mere")
+  pereId      String?
+  pere        Animal?  @relation("Pere", fields: [pereId], references: [id])
+  enfantsPere Animal[] @relation("Pere")
+  // Père hors troupeau (bélier prêté / extérieur) : identité libre.
+  pereExterieur String?
+
+  evenementsSante EvenementSante[]
+  vente           Vente?
+
+  // Dépense d'achat rattachée (si l'animal a été acheté) — lien 1:1.
+  mouvementAchatId String?             @unique
+  mouvementAchat   MouvementComptable? @relation("AchatAnimal", fields: [mouvementAchatId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([statut])
+  @@index([espece])
+}
+
+/// Événement de suivi santé rattaché à un animal.
+model EvenementSante {
+  id       String   @id @default(cuid())
+  animalId String
+  animal   Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+  date     DateTime
+  type     String // "vaccin" | "vermifuge" | "veto" | "traitement" | "autre"
+  note     String?
+
+  createdAt DateTime @default(now())
+
+  @@index([animalId])
+}
+
+/// Vente d'un animal — traçabilité complète, reliée à un mouvement comptable (gain).
+model Vente {
+  id         String   @id @default(cuid())
+  animalId   String   @unique
+  animal     Animal   @relation(fields: [animalId], references: [id])
+  date       DateTime
+  prix       Float
+  acheteur   String?
+  poids      Float?
+  prixAuKilo Float?
+  motif      String? // "boucherie" | "reproduction" | "reforme" | "autre"
+  marge      Float? // prix - coût d'achat/élevage estimé
+
+  mouvementId String?             @unique
+  mouvement   MouvementComptable? @relation(fields: [mouvementId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+/// Mouvement comptable : un gain ou une dépense.
+model MouvementComptable {
+  id        String   @id @default(cuid())
+  typeFlux  String // "gain" | "depense"
+  categorie String
+  montant   Float
+  date      DateTime
+  note      String?
+
+  vente       Vente?
+  animalAchat Animal? @relation("AchatAnimal")
+
+  createdAt DateTime @default(now())
+
+  @@index([date])
+  @@index([typeFlux])
+}
+
+/// Réglages simples clé/valeur (ex : devise).
+model Parametre {
+  cle    String @id
+  valeur String
+}
+
+/// Espèce personnalisée ajoutée par l'utilisateur (mouton/chèvre sont fournis
+/// par le code, cf. lib/constants). `value` = identifiant, `label` = affichage.
+model Espece {
+  value String @id
+  label String
+}
+
+/// Catégorie personnalisée ajoutée par l'utilisateur (les catégories par
+/// défaut sont fournies par le code, cf. lib/constants).
+model Categorie {
+  id        String   @id @default(cuid())
+  nom       String
+  typeFlux  String // "gain" | "depense"
+  createdAt DateTime @default(now())
+
+  @@unique([nom, typeFlux])
+}
