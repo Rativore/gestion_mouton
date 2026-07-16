@@ -51,6 +51,17 @@ export async function enregistrerAnimalAction(
     : null;
 
   const origine = texteOptionnel(formData.get("origine")) ?? "naissance";
+  const dateEntree = dateOptionnelle(formData.get("dateEntree"));
+  const coutAchat =
+    origine === "achat" ? nombreOptionnel(formData.get("coutAchat")) : null;
+
+  // Un achat doit porter sa date d'acquisition : sans elle, le mouvement
+  // comptable se retrouverait daté du jour (mois en cours) au lieu de la
+  // date réelle de l'achat.
+  if (origine === "achat" && coutAchat != null && coutAchat > 0 && !dateEntree) {
+    return { error: "La date d'entrée est obligatoire pour un achat." };
+  }
+
   // Une bête née n'a ni coût d'achat ni père/mère extérieurs à saisir ici ;
   // une bête achetée n'a pas de filiation locale.
   const donnees: DonneesAnimal = {
@@ -63,8 +74,8 @@ export async function enregistrerAnimalAction(
     signes: texteOptionnel(formData.get("signes")),
     note: texteOptionnel(formData.get("note")),
     origine,
-    dateEntree: dateOptionnelle(formData.get("dateEntree")),
-    coutAchat: origine === "achat" ? nombreOptionnel(formData.get("coutAchat")) : null,
+    dateEntree,
+    coutAchat,
     photoUrl,
     mereId,
     pereId,

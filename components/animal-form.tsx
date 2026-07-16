@@ -215,12 +215,13 @@ export function AnimalForm({
           </div>
           <div>
             <label className="label" htmlFor="dateEntree">
-              Date d&apos;entrée
+              Date d&apos;entrée {estAchat && "*"}
             </label>
             <input
               id="dateEntree"
               name="dateEntree"
               type="date"
+              required={estAchat}
               defaultValue={toDateInput(initial.dateEntree)}
               className="field"
             />

@@ -130,15 +130,23 @@ async function reconcilierAchat(
 ) {
   const doitExister =
     d.origine === "achat" && d.coutAchat != null && d.coutAchat > 0;
-  const dateAchat = d.dateEntree ?? new Date();
   const note = `Achat de l'animal n°${d.numero}`;
 
   if (doitExister && animal.mouvementAchatId) {
+    // La date comptable suit la date d'entrée. Si elle n'est pas fournie, on
+    // conserve la date existante du mouvement — surtout PAS `new Date()`, qui
+    // ferait basculer un achat passé dans le mois en cours.
+    const existant = await tx.mouvementComptable.findUnique({
+      where: { id: animal.mouvementAchatId },
+      select: { date: true },
+    });
+    const dateAchat = d.dateEntree ?? existant?.date ?? new Date();
     await tx.mouvementComptable.update({
       where: { id: animal.mouvementAchatId },
       data: { montant: d.coutAchat!, date: dateAchat, note },
     });
   } else if (doitExister) {
+    const dateAchat = d.dateEntree ?? new Date();
     const mouvement = await tx.mouvementComptable.create({
       data: {
         typeFlux: "depense",
