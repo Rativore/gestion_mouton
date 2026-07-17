@@ -134,9 +134,9 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] **Sécurité — `requireUser()` dans chaque Server Action** (14 actions, `lib/auth.ts`) : défense en profondeur au-dessus du proxy — **S**
 - [x] Recherche `mode: "insensitive"` (Postgres sensible à la casse) — **S**
 - [x] Suppression d'un animal vendu **sécurisée** : la vente liée et son mouvement de gain sont supprimés dans la transaction avant l'animal (sinon violation de clé étrangère) — **S**
+- [x] **Zod** sur les Server Actions : helper `lib/validation.ts` (`valider` + schémas réutilisables) appliqué aux actions de formulaire (vente, santé, catégorie, espèce, animal, saisie) avec messages FR clairs. Les actions à simple `id` et `parametres` gardent leur validation triviale — **M**
 - [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
 - [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
-- [ ] **Zod** sur les Server Actions + messages d'erreur clairs — **M**
 - [ ] Export comptable (CSV / PDF), tableau de bord enrichi, date/motif de décès — **M**
 - [ ] **Factoriser la duplication restante** (repérée au tri du 17/07, laissée car non testable hors ligne) : helper de formatage `fmt` (répété dans 4 pages), helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation quasi identiques `bilanAnnuel`/`bilanGlobal`, type `EtatFormulaire` redéclaré dans les 6 actions, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
 
@@ -151,6 +151,11 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase F (2) : validation Zod
+- **🧪 Validation par Zod.** Nouveau `lib/validation.ts` : helper `valider(schema, formData)` (renvoie `{data}` typé ou `{error}` = 1ᵉʳ message) + schémas de champs réutilisables (`texteRequis`, `nombrePositif`, `dateRequise`, optionnels avec préprocessing « vide → undefined » et coercition). Appliqué aux actions de formulaire : `vendreAnimalAction`, `ajouterEvenementSanteAction`, `ajouterCategorieAction`, `ajouterEspeceAction`, `enregistrerAnimalAction` (champs requis) et `enregistrerSaisieAction` (champs de base). Zod v4 (`{ error: "..." }`).
+- **⚖️ Choix.** Les actions à simple `id` (suppressions, marquer mort) et `setDeviseAction` gardent leur validation triviale. Pour l'animal et la saisie, la logique métier (photo, filiation, branchement animal/catégorie, règle « achat → date obligatoire ») reste dans l'action ; les optionnels de `DonneesAnimal` restent lus via `lib/utils` (typés `null`).
+- **✅** `tsc` + build prod OK ; comportement des schémas validé en isolation (coercition, messages FR, clé `photo` ignorée).
 
 ### 2026-07-17 (réseau perso) — Phase F (1) : sécurité & fiabilité
 - **🔒 `requireUser()` dans les 14 Server Actions** (`lib/auth.ts`). Le proxy couvre déjà les POST des actions, mais cette vérification en tête de chaque action est une défense en profondeur (au cas où le `matcher` du proxy changerait). Non appliqué à `auth.ts` (connexion/déconnexion).

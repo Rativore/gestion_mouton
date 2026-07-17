@@ -1,35 +1,46 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 import { vendreAnimal, annulerVente } from "@/lib/services/ventes";
-import { texteOptionnel, dateOptionnelle, nombreOptionnel } from "@/lib/utils";
 import { requireUser } from "@/lib/auth";
+import {
+  valider,
+  texteRequis,
+  texteOptionnel,
+  nombrePositif,
+  nombreOptionnel,
+  dateRequise,
+} from "@/lib/validation";
 
 export type EtatFormulaire = { error?: string };
+
+const schemaVente = z.object({
+  animalId: texteRequis("Sélectionnez un animal."),
+  prix: nombrePositif("Le prix de vente doit être un nombre positif."),
+  date: dateRequise("La date de vente est obligatoire."),
+  acheteur: texteOptionnel,
+  poids: nombreOptionnel,
+  motif: texteOptionnel,
+});
 
 export async function vendreAnimalAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
   await requireUser();
-  const animalId = texteOptionnel(formData.get("animalId"));
-  const prix = nombreOptionnel(formData.get("prix"));
-  const date = dateOptionnelle(formData.get("date"));
-
-  if (!animalId) return { error: "Sélectionnez un animal." };
-  if (prix == null || prix <= 0) {
-    return { error: "Le prix de vente doit être un nombre positif." };
-  }
-  if (!date) return { error: "La date de vente est obligatoire." };
+  const v = valider(schemaVente, formData);
+  if ("error" in v) return { error: v.error };
+  const { animalId, prix, date, acheteur, poids, motif } = v.data;
 
   try {
     await vendreAnimal({
       animalId,
       prix,
       date,
-      acheteur: texteOptionnel(formData.get("acheteur")),
-      poids: nombreOptionnel(formData.get("poids")),
-      motif: texteOptionnel(formData.get("motif")),
+      acheteur: acheteur ?? null,
+      poids: poids ?? null,
+      motif: motif ?? null,
     });
   } catch (e) {
     return { error: (e as Error).message };

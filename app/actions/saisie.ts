@@ -9,8 +9,24 @@ import { enregistrerPhoto } from "@/lib/upload";
 import { texteOptionnel, dateOptionnelle, nombreOptionnel } from "@/lib/utils";
 import { SOUS_TYPE_ANIMAL_PREFIX, SOUS_TYPE_AUTRE } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { z } from "zod";
+import {
+  valider,
+  nombrePositif,
+  dateRequise,
+  texteOptionnel as zTexteOptionnel,
+} from "@/lib/validation";
 
 export type EtatFormulaire = { error?: string };
+
+// Champs communs à toute saisie (le branchement animal/catégorie reste géré
+// dans l'action car il dépend de `sousType`).
+const schemaSaisie = z.object({
+  flux: z.enum(["achat", "vente"], { error: "Type d'opération invalide." }),
+  date: dateRequise("La date est obligatoire."),
+  montant: nombrePositif("Le montant doit être un nombre positif."),
+  sousType: zTexteOptionnel,
+});
 
 /**
  * Saisie unique et centralisée « Achat / Vente ».
@@ -23,18 +39,10 @@ export async function enregistrerSaisieAction(
   formData: FormData,
 ): Promise<EtatFormulaire> {
   await requireUser();
-  const flux = texteOptionnel(formData.get("flux"));
-  const sousType = texteOptionnel(formData.get("sousType"));
-  const date = dateOptionnelle(formData.get("date"));
-  const montant = nombreOptionnel(formData.get("montant"));
-
-  if (flux !== "achat" && flux !== "vente") {
-    return { error: "Type d'opération invalide." };
-  }
-  if (!date) return { error: "La date est obligatoire." };
-  if (montant == null || montant <= 0) {
-    return { error: "Le montant doit être un nombre positif." };
-  }
+  const v = valider(schemaSaisie, formData);
+  if ("error" in v) return { error: v.error };
+  const { flux, date, montant } = v.data;
+  const sousType = v.data.sousType ?? null;
 
   const estAnimal = !!sousType && sousType.startsWith(SOUS_TYPE_ANIMAL_PREFIX);
   const espece = estAnimal

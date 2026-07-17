@@ -20,20 +20,40 @@ import {
 } from "@/lib/utils";
 import { PERE_EXTERIEUR } from "@/lib/constants";
 import { requireUser } from "@/lib/auth";
+import { z } from "zod";
+import {
+  valider,
+  texteRequis,
+  texteOptionnel as zTexteOptionnel,
+  dateRequise,
+} from "@/lib/validation";
 
 export type EtatFormulaire = { error?: string };
+
+// Champs requis à l'enregistrement d'un animal (les optionnels restent lus via
+// les helpers `lib/utils` car DonneesAnimal attend `null`, pas `undefined`).
+const schemaAnimalBase = z.object({
+  numero: texteRequis("Le numéro est obligatoire."),
+  espece: texteRequis("L'espèce est obligatoire."),
+});
+
+const schemaSante = z.object({
+  animalId: texteRequis("Animal manquant."),
+  type: texteRequis("Type et date sont obligatoires."),
+  date: dateRequise("Type et date sont obligatoires."),
+  note: zTexteOptionnel,
+});
 
 export async function enregistrerAnimalAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
   await requireUser();
+  const champs = valider(schemaAnimalBase, formData);
+  if ("error" in champs) return { error: champs.error };
+  const { numero, espece } = champs.data;
   const id = texteOptionnel(formData.get("id"));
-  const numero = texteOptionnel(formData.get("numero"));
-  const espece = texteOptionnel(formData.get("espece"));
 
-  if (!numero) return { error: "Le numéro est obligatoire." };
-  if (!espece) return { error: "L'espèce est obligatoire." };
   if (await numeroExiste(numero, id ?? undefined)) {
     return { error: `Le numéro « ${numero} » est déjà utilisé.` };
   }
@@ -122,17 +142,14 @@ export async function ajouterEvenementSanteAction(
   formData: FormData,
 ): Promise<EtatFormulaire> {
   await requireUser();
-  const animalId = texteOptionnel(formData.get("animalId"));
-  const type = texteOptionnel(formData.get("type"));
-  const date = dateOptionnelle(formData.get("date"));
-  if (!animalId || !type || !date) {
-    return { error: "Type et date sont obligatoires." };
-  }
+  const v = valider(schemaSante, formData);
+  if ("error" in v) return { error: v.error };
+  const { animalId, type, date, note } = v.data;
   await ajouterEvenementSante({
     animalId,
     type,
     date,
-    note: texteOptionnel(formData.get("note")),
+    note: note ?? null,
   });
   revalidatePath(`/troupeau/${animalId}`);
   return {};
