@@ -26,9 +26,8 @@ import {
   texteRequis,
   texteOptionnel as zTexteOptionnel,
   dateRequise,
+  type EtatFormulaire,
 } from "@/lib/validation";
-
-export type EtatFormulaire = { error?: string };
 
 // Champs requis à l'enregistrement d'un animal (les optionnels restent lus via
 // les helpers `lib/utils` car DonneesAnimal attend `null`, pas `undefined`).

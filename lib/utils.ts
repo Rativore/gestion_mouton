@@ -21,6 +21,14 @@ export function formatMontant(
   return formatteurDevise(devise).format(montant);
 }
 
+/**
+ * Fabrique un formateur de montant lié à une devise, pour éviter de répéter
+ * `(n) => formatMontant(n, devise)` dans chaque page.
+ */
+export function creerFmt(devise: string) {
+  return (montant: number | null | undefined) => formatMontant(montant, devise);
+}
+
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   day: "2-digit",
   month: "2-digit",

@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** État renvoyé par les Server Actions de formulaire (pour `useActionState`). */
+export type EtatFormulaire = { error?: string };
+
 /**
  * Helpers de validation des Server Actions (Zod).
  * Les valeurs d'un FormData sont des chaînes ; ces schémas gèrent la

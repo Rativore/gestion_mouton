@@ -138,7 +138,10 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
 - [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
 - [ ] Export comptable (CSV / PDF), tableau de bord enrichi, date/motif de décès — **M**
-- [ ] **Factoriser la duplication restante** (repérée au tri du 17/07, laissée car non testable hors ligne) : helper de formatage `fmt` (répété dans 4 pages), helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation quasi identiques `bilanAnnuel`/`bilanGlobal`, type `EtatFormulaire` redéclaré dans les 6 actions, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
+- [ ] **Factoriser la duplication restante** — _partiellement fait_ :
+  - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
+  - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)
+  - [ ] helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation `bilanAnnuel`/`bilanGlobal`, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
 
 ---
 
@@ -151,6 +154,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase F (3) : factorisation (partielle)
+- **♻️ `EtatFormulaire` centralisé** dans `lib/validation.ts` (les 5 redéclarations dans les actions supprimées). ⚠️ Piège Next : un module `"use server"` ne peut **exporter que des fonctions async** — impossible d'y re-exporter un type (`export type { EtatFormulaire } from …` casse le build « Export … doesn't exist »). Solution : les composants **et** les actions importent le type directement depuis `lib/validation`.
+- **♻️ `creerFmt(devise)`** dans `lib/utils.ts` : remplace le lambda `(n) => formatMontant(n, devise)` répété dans 4 pages.
+- **⏭️ Reste** : helpers de tri `hrefTri`/`fleche`, agrégations `bilanAnnuel`/`bilanGlobal`, échafaudage des petits formulaires.
+- **✅** `tsc` + build prod OK.
 
 ### 2026-07-17 (réseau perso) — Phase F (2) : validation Zod
 - **🧪 Validation par Zod.** Nouveau `lib/validation.ts` : helper `valider(schema, formData)` (renvoie `{data}` typé ou `{error}` = 1ᵉʳ message) + schémas de champs réutilisables (`texteRequis`, `nombrePositif`, `dateRequise`, optionnels avec préprocessing « vide → undefined » et coercition). Appliqué aux actions de formulaire : `vendreAnimalAction`, `ajouterEvenementSanteAction`, `ajouterCategorieAction`, `ajouterEspeceAction`, `enregistrerAnimalAction` (champs requis) et `enregistrerSaisieAction` (champs de base). Zod v4 (`{ error: "..." }`).

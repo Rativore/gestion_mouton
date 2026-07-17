@@ -8,9 +8,7 @@ import {
   type TypeFlux,
 } from "@/lib/services/categories";
 import { requireUser } from "@/lib/auth";
-import { valider, texteRequis } from "@/lib/validation";
-
-export type EtatFormulaire = { error?: string };
+import { valider, texteRequis, type EtatFormulaire } from "@/lib/validation";
 
 const schemaCategorie = z.object({
   nom: texteRequis("Le nom est obligatoire."),

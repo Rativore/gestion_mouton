@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import {
-  enregistrerSaisieAction,
-  type EtatFormulaire,
-} from "@/app/actions/saisie";
+import { enregistrerSaisieAction } from "@/app/actions/saisie";
+import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 import {
   MOTIFS_VENTE,

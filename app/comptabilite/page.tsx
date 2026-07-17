@@ -17,7 +17,7 @@ import { AnneeSelect } from "@/components/annee-select";
 import { ConfirmButton } from "@/components/confirm-button";
 import { TOUTES_ANNEES } from "@/lib/constants";
 import { getDevise } from "@/lib/services/parametres";
-import { formatMontant, formatDate, MOIS_COURTS } from "@/lib/utils";
+import { creerFmt, formatDate, MOIS_COURTS } from "@/lib/utils";
 
 export default async function ComptabilitePage({
   searchParams,
@@ -34,7 +34,7 @@ export default async function ComptabilitePage({
     listerMouvements(toutes ? {} : { annee: annee! }),
     getDevise(),
   ]);
-  const fmt = (n: number | null | undefined) => formatMontant(n, devise);
+  const fmt = creerFmt(devise);
 
   // Points du graphe : par année en mode global, par mois pour une année.
   const points: PointGraphe[] = toutes

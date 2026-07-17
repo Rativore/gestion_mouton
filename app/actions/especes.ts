@@ -4,9 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { ajouterEspece, supprimerEspece } from "@/lib/services/especes";
 import { requireUser } from "@/lib/auth";
-import { valider, texteRequis } from "@/lib/validation";
-
-export type EtatFormulaire = { error?: string };
+import { valider, texteRequis, type EtatFormulaire } from "@/lib/validation";
 
 const schemaEspece = z.object({ nom: texteRequis("Le nom est obligatoire.") });
 

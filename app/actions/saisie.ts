@@ -15,9 +15,8 @@ import {
   nombrePositif,
   dateRequise,
   texteOptionnel as zTexteOptionnel,
+  type EtatFormulaire,
 } from "@/lib/validation";
-
-export type EtatFormulaire = { error?: string };
 
 // Champs communs à toute saisie (le branchement animal/catégorie reste géré
 // dans l'action car il dépend de `sousType`).

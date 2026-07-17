@@ -10,7 +10,7 @@ import { SaisieForm } from "@/components/saisie-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CATEGORIE_VENTE_ANIMAL, CATEGORIE_ACHAT_ANIMAL } from "@/lib/constants";
 import { getDevise } from "@/lib/services/parametres";
-import { formatMontant, formatDate } from "@/lib/utils";
+import { creerFmt, formatDate } from "@/lib/utils";
 
 type Tri = "date" | "type" | "montant";
 
@@ -29,7 +29,7 @@ export default async function AchatVentePage({
       listerCategories("depense"),
       getDevise(),
     ]);
-  const fmt = (n: number | null | undefined) => formatMontant(n, devise);
+  const fmt = creerFmt(devise);
 
   const totalAchats = mouvements
     .filter((m) => m.typeFlux === "depense")

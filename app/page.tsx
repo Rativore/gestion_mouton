@@ -3,7 +3,7 @@ import { bilanAnnuel } from "@/lib/services/comptabilite";
 import { listerVentes } from "@/lib/services/ventes";
 import { getDevise } from "@/lib/services/parametres";
 import { StatCard, Card, LinkButton } from "@/components/ui";
-import { formatMontant, formatDate } from "@/lib/utils";
+import { creerFmt, formatDate } from "@/lib/utils";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function AccueilPage() {
     getDevise(),
   ]);
   const dernieresVentes = ventes.slice(0, 5);
-  const fmt = (n: number | null | undefined) => formatMontant(n, devise);
+  const fmt = creerFmt(devise);
 
   return (
     <>

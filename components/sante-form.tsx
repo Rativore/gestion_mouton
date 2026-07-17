@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import {
-  ajouterEvenementSanteAction,
-  type EtatFormulaire,
-} from "@/app/actions/animaux";
+import { ajouterEvenementSanteAction } from "@/app/actions/animaux";
+import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 import { TYPES_SANTE } from "@/lib/constants";
 

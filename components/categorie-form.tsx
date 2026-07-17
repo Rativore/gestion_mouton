@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import {
-  ajouterCategorieAction,
-  type EtatFormulaire,
-} from "@/app/actions/categories";
+import { ajouterCategorieAction } from "@/app/actions/categories";
+import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 
 export function CategorieForm({ typeFlux }: { typeFlux: "gain" | "depense" }) {

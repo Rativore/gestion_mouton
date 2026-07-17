@@ -2,10 +2,8 @@
 
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import {
-  enregistrerAnimalAction,
-  type EtatFormulaire,
-} from "@/app/actions/animaux";
+import { enregistrerAnimalAction } from "@/app/actions/animaux";
+import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 import { SEXES, ORIGINES, PERE_EXTERIEUR } from "@/lib/constants";
 import { toDateInput } from "@/lib/utils";

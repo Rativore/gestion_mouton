@@ -1,10 +1,8 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import {
-  ajouterEspeceAction,
-  type EtatFormulaire,
-} from "@/app/actions/especes";
+import { ajouterEspeceAction } from "@/app/actions/especes";
+import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 
 export function EspeceForm() {

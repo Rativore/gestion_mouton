@@ -20,7 +20,7 @@ import {
 } from "@/lib/constants";
 import { listerEspeces, libelleEspece } from "@/lib/services/especes";
 import { getDevise } from "@/lib/services/parametres";
-import { formatDate, formatMontant, calculerAge } from "@/lib/utils";
+import { formatDate, creerFmt, calculerAge } from "@/lib/utils";
 
 function Info({ label, valeur }: { label: string; valeur: React.ReactNode }) {
   return (
@@ -45,7 +45,7 @@ export default async function AnimalPage({
     listerEspeces(),
   ]);
   if (!animal) notFound();
-  const fmt = (n: number | null | undefined) => formatMontant(n, devise);
+  const fmt = creerFmt(devise);
 
   const present = animal.statut === "present";
   const enfants = [...animal.enfantsMere, ...animal.enfantsPere];

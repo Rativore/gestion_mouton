@@ -11,9 +11,8 @@ import {
   nombrePositif,
   nombreOptionnel,
   dateRequise,
+  type EtatFormulaire,
 } from "@/lib/validation";
-
-export type EtatFormulaire = { error?: string };
 
 const schemaVente = z.object({
   animalId: texteRequis("Sélectionnez un animal."),
