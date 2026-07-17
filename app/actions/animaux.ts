@@ -18,6 +18,7 @@ import {
   dateOptionnelle,
   nombreOptionnel,
 } from "@/lib/utils";
+import { PERE_EXTERIEUR } from "@/lib/constants";
 
 export type EtatFormulaire = { error?: string };
 
@@ -44,7 +45,7 @@ export async function enregistrerAnimalAction(
 
   const mereId = texteOptionnel(formData.get("mereId"));
   const pereIdRaw = texteOptionnel(formData.get("pereId"));
-  const estPereExterieur = pereIdRaw === "__exterieur__";
+  const estPereExterieur = pereIdRaw === PERE_EXTERIEUR;
   const pereId = estPereExterieur ? null : pereIdRaw;
   const pereExterieur = estPereExterieur
     ? texteOptionnel(formData.get("pereExterieur"))

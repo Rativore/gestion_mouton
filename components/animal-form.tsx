@@ -7,7 +7,7 @@ import {
   type EtatFormulaire,
 } from "@/app/actions/animaux";
 import { SubmitButton } from "@/components/submit-button";
-import { SEXES, ORIGINES } from "@/lib/constants";
+import { SEXES, ORIGINES, PERE_EXTERIEUR } from "@/lib/constants";
 import { toDateInput } from "@/lib/utils";
 
 type ParentOption = {
@@ -35,8 +35,6 @@ export type AnimalInitial = {
   note?: string | null;
   photoUrl?: string | null;
 };
-
-const PERE_EXTERIEUR = "__exterieur__";
 
 export function AnimalForm({
   initial = {},

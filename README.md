@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🐑 Mon Troupeau
 
-## Getting Started
+Application de **gestion, traçabilité et comptabilité** d'un élevage de moutons / chèvres.
+Cible : une **PWA mobile simple, pour 2 utilisateurs**.
 
-First, run the development server:
+**Stack :** Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Tailwind 4.
+
+## Démarrage
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La base pointe sur **Supabase** via `.env` (`DATABASE_URL` / `DIRECT_URL`) — fichier non versionné, à recréer depuis Supabase (onglet **Connect → ORMs → Prisma**).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> ⚠️ Le réseau Klesia bloque les ports PostgreSQL : l'app ne peut pas joindre Supabase depuis ce poste.
+> Utiliser un réseau non filtré en local, ou déployer sur Vercel. Détails dans la doc.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📚 Documentation
 
-## Learn More
+Toute la documentation est dans [`docs/`](./docs/) :
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [`docs/README.md`](./docs/README.md) — présentation, démarrage, pièges d'environnement, état du projet.
+- [`docs/ANALYSE.md`](./docs/ANALYSE.md) — analyse de la structure, points d'attention et **plan de tâches** vers l'app mobile.

@@ -36,11 +36,6 @@ export const MOTIFS_VENTE = [
   { value: "autre", label: "Autre" },
 ] as const;
 
-export const TYPES_FLUX = [
-  { value: "gain", label: "Gain" },
-  { value: "depense", label: "Dépense" },
-] as const;
-
 // Catégories fournies par défaut (toujours présentes). L'utilisateur peut en
 // ajouter d'autres, stockées dans la table Categorie.
 export const CATEGORIES_DEFAUT: Record<"gain" | "depense", string[]> = {
@@ -72,6 +67,10 @@ export const CATEGORIE_ACHAT_ANIMAL = "Achat d'animal";
 // Un sous-type « animal » est encodé "__animal__:<espece>" (ex "__animal__:mouton").
 export const SOUS_TYPE_ANIMAL_PREFIX = "__animal__:";
 export const SOUS_TYPE_AUTRE = "__autre__";
+
+// Valeur spéciale du sélecteur de père : père hors troupeau (bélier extérieur).
+// Partagée entre le formulaire (components/animal-form) et l'action de saisie.
+export const PERE_EXTERIEUR = "__exterieur__";
 
 /** Emoji illustratif d'une espèce (générique si inconnue). */
 export function emojiEspece(value: string): string {

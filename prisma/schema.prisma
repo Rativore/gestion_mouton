@@ -1,13 +1,16 @@
 // Schéma de données — Gestion / traçabilité / comptabilité d'un troupeau
-// Base SQLite pour le MVP, portable vers PostgreSQL plus tard.
+// Base PostgreSQL hébergée sur Supabase.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  // Connexion applicative : pooler Supabase (transaction mode, port 6543).
+  url       = env("DATABASE_URL")
+  // Connexion directe (port 5432) utilisée par les migrations Prisma.
+  directUrl = env("DIRECT_URL")
 }
 
 /// Un animal du troupeau (mouton ou chèvre).

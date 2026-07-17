@@ -115,7 +115,7 @@ export function SaisieForm({
       {/* Sous-type */}
       <div>
         <label className="label" htmlFor="sousType">
-          Type d&apos;{flux} *
+          {flux === "achat" ? "Type d'achat" : "Type de vente"} *
         </label>
         <select
           id="sousType"

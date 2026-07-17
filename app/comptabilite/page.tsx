@@ -125,7 +125,7 @@ export default async function ComptabilitePage({
           {mouvements.length === 0 ? (
             <p className="text-sm text-muted">
               Aucun mouvement enregistré pour cette période. Ajoutez-en depuis
-              «&nbsp;Gains / Dépenses&nbsp;».
+              «&nbsp;Achat / Vente&nbsp;».
             </p>
           ) : (
             <div className="divide-y divide-border">

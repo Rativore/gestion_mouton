@@ -1,13 +1,14 @@
-# Analyse de la structure & plan de mise en production
+# Analyse de la structure & plan produit
 
 _Projet : **Mon Troupeau** — gestion / traçabilité / comptabilité d'un élevage._
-_Objectif du document : évaluer l'état du code (V1) et définir le chemin vers une mise en production sur serveur avec PostgreSQL._
+_Cible : **application mobile (PWA), simple, pour 2 utilisateurs.** Pas d'objectif de montée en charge._
+_Objectif du document : évaluer l'état du code et définir le chemin vers une app mobile utilisable au quotidien, hébergée sur Vercel + Supabase._
 
 ---
 
 ## 1. Architecture actuelle
 
-Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · SQLite · Tailwind 4**.
+Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Tailwind 4**.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -20,9 +21,13 @@ Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · SQLit
 │  lib/prisma.ts          Client Prisma (singleton)         │
 ├─────────────────────────────────────────────────────────┤
 │  prisma/schema.prisma   Modèle + migrations versionnées   │
-│  SQLite (dev.db)                                          │
+│  PostgreSQL — Supabase (projet dcomdmaaepacgbdqkdki)      │
 └─────────────────────────────────────────────────────────┘
 ```
+
+> **Réseau Klesia** : les ports PostgreSQL (5432/6543) sont bloqués par le pare-feu.
+> L'app ne peut donc pas joindre Supabase depuis le poste Klesia. Cible d'exécution =
+> **Vercel** (cloud → Supabase OK, accès navigateur en HTTPS). Dev local = réseau non filtré.
 
 **Flux** : la page (Server Component) lit via `lib/services` → rend le HTML ; les formulaires appellent une Server Action → service → `revalidatePath`.
 
@@ -55,19 +60,18 @@ Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · SQLit
 
 Classés par sévérité. Références fichier entre parenthèses.
 
-### 🔴 Critique (à traiter avant toute compta réelle)
-- **Montants en `Float`** (`schema.prisma` : `coutAchat`, `prix`, `prixAuKilo`, `marge`, `montant`). La virgule flottante provoque des erreurs d'arrondi (`0.1+0.2≠0.3`) → inacceptable en comptabilité. → **`Decimal`** (ou centimes entiers).
+### 🔴 Bloquant pour le déploiement Vercel (à traiter en priorité)
+- **Stockage photos sur disque local** (`lib/upload.ts` → `public/uploads/`). Le système de fichiers de Vercel est **éphémère** : les photos seraient perdues à chaque redéploiement, et l'écriture y est de toute façon interdite en serverless. → **Supabase Storage** (bucket dédié, upload en HTTPS). C'est le chantier n°1 (Phase B).
 
-### 🟠 Bloquant pour un déploiement serveur
-- **Stockage photos sur disque local** (`lib/upload.ts` → `public/uploads/`). Perdu au redéploiement, non partagé entre instances, incompatible serverless. → **stockage objet** (S3 / Cloudflare R2 / Vercel Blob).
-- **Aucune authentification.** Acceptable en local mono-utilisateur, requis dès la mise en ligne. → **Auth.js** + rattachement des données à un `User`.
-- **Secrets & env** : s'assurer que `.env` n'est pas versionné et que `DATABASE_URL` de prod passe par les variables d'environnement du serveur.
+### 🟠 Requis avant la mise en ligne
+- **Aucune authentification.** Acceptable en local, requis dès que l'app est publique. Pour 2 utilisateurs : **Supabase Auth** (email/mot de passe), 2 comptes, données partagées (pas de multi-tenant). → Phase D.
+- **Secrets & env** : `.env` n'est pas versionné (OK). En prod, `DATABASE_URL`/`DIRECT_URL` (+ clés Supabase) passent par les variables d'environnement Vercel.
+- **Montants en `Float`** (`schema.prisma` : `coutAchat`, `prix`, `prixAuKilo`, `marge`, `montant`). La virgule flottante provoque des erreurs d'arrondi (`0.1+0.2≠0.3`). Tolérable pour un suivi simple, mais à passer en **`Decimal`** avant de s'appuyer sur les chiffres pour une compta « sérieuse ». → Phase F.
 
-### 🟡 À corriger (fiabilité / portabilité)
-- **Recherche sensible à la casse sur PostgreSQL** (`lib/services/animaux.ts:20-22`, `contains`). SQLite est insensible par défaut, Postgres non. → ajouter `mode: "insensitive"`.
+### 🟡 À corriger (fiabilité)
+- **Recherche sensible à la casse sur PostgreSQL** (`lib/services/animaux.ts:18-24`, `contains`). SQLite était insensible par défaut, Postgres non. → ajouter `mode: "insensitive"`.
 - **Suppression d'un animal déjà vendu** : `Vente.animal` n'a pas de règle `onDelete`. Supprimer une bête vendue échouera (violation de clé étrangère). → définir un comportement explicite (interdire, ou cascader vers la vente).
-- **Migrations SQLite non transposables** telles quelles vers Postgres : il faudra régénérer l'historique de migration sur la nouvelle base.
-- **Gestion d'erreurs générique** (`app/actions/animaux.ts:80`, `saisie.ts:73` : `catch {}`) : messages peu précis pour l'utilisateur.
+- **Gestion d'erreurs générique** (`app/actions/*.ts` : `catch {}`) : messages peu précis pour l'utilisateur.
 
 ### ⚪ Améliorations (qualité)
 - **Validation** : entrées des Server Actions validées à la main → introduire **Zod** (schémas réutilisables, messages clairs).
@@ -77,52 +81,70 @@ Classés par sévérité. Références fichier entre parenthèses.
 
 ---
 
-## 4. Plan de tâches
+## 4. Plan de tâches — vers l'app mobile
 
 Effort indicatif : **S** = < ½ j · **M** = ½–1 j · **L** = 1–3 j.
+Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hébergée sur **Vercel + Supabase**. On vise le simple et le robuste, pas la scalabilité.
 
-### Phase 0 — Stabilisation V1 (rapide, sans changer d'infra)
-- [ ] Ajouter `mode: "insensitive"` sur les `contains` (fait en même temps que Postgres) — **S**
-- [ ] Corriger la suppression d'un animal vendu (règle `onDelete` ou blocage explicite) — **S**
-- [ ] Messages d'erreur plus précis dans les actions — **S**
-- [ ] Exclure `.next/` de la synchro OneDrive (évite les verrous de build) — **S**
+### Phase A — Finaliser la bascule Supabase _(en cours)_
+- [x] Schéma Prisma → `provider = "postgresql"` + `directUrl` — **S**
+- [x] `.env` avec les connexions Supabase (pooler 6543 + directe 5432) — **S**
+- [x] Générer la migration initiale PostgreSQL (`prisma/migrations/*/migration.sql`) — **S**
+- [x] Créer les tables sur Supabase (via l'éditeur SQL, contournement du pare-feu Klesia) — **S**
+- [ ] **Baseliner l'historique de migration** : depuis un réseau non filtré, `prisma migrate resolve --applied <migration>` pour que Prisma considère l'init comme appliquée — **S**
+- [ ] **Tester la connexion de l'app** depuis un réseau non filtré (partage 4G) : `npm run dev`, créer un animal, vérifier qu'il apparaît dans Supabase — **S**
 
-### Phase 1 — Base de données prod (PostgreSQL + Decimal) 🎯
-- [ ] Provisionner une base **PostgreSQL** (Neon / Supabase / RDS…) — **S**
-- [ ] Passer `provider = "postgresql"` + `DATABASE_URL` par variable d'env — **S**
-- [ ] Convertir les montants `Float → Decimal` (schéma + services + formatage) — **M**
-- [ ] Régénérer les migrations sur Postgres, script de **seed** adapté — **M**
-- [ ] (Option) Enums natifs pour statut/sexe/typeFlux/espèce — **M**
+### Phase B — Photos sur Supabase Storage 🎯 _(chantier technique n°1, bloquant Vercel)_
+- [ ] Créer un **bucket** Supabase Storage `animaux` (lecture publique) — **S**
+- [ ] Réécrire `lib/upload.ts` : upload vers Storage via l'API HTTPS Supabase, renvoyer l'URL publique — **M**
+- [ ] Adapter `components/animal-photo.tsx` si besoin (URL absolue Supabase au lieu de `/uploads/...`) — **S**
+- [ ] Migrer les 2 photos locales existantes vers le bucket (ou repartir de zéro, base vide) — **S**
+- [ ] Retirer `public/uploads/` du flux de l'app — **S**
 
-### Phase 2 — Prêt pour le serveur
-- [ ] **Stockage objet** pour les photos (S3/R2) + adapter `lib/upload.ts` — **M**
-- [ ] **Authentification** (Auth.js) + modèle `User`, rattacher les données — **L**
-- [ ] Choisir l'**hébergement** (Vercel, VPS + Docker, …) & pipeline de déploiement — **M**
-- [ ] Variables d'environnement / secrets de prod, sauvegardes DB — **S**
+### Phase C — PWA (effet « app mobile »)
+- [ ] `app/manifest.ts` (ou `public/manifest.json`) : nom, `display: standalone`, couleurs, orientation — **S**
+- [ ] Icônes **192×192** et **512×512** (+ `apple-touch-icon`) — **S**
+- [ ] Service worker minimal pour l'installabilité (`next-pwa` ou implémentation manuelle) — **M**
+- [ ] Balises `<meta viewport>` / theme-color, test « Ajouter à l'écran d'accueil » sur iOS + Android — **S**
 
-### Phase 3 — Qualité & robustesse
-- [ ] **Zod** sur toutes les Server Actions — **M**
-- [ ] **Tests** de la logique critique (vente/achat/bilan) — **M**
-- [ ] Journalisation des erreurs (Sentry ou équivalent) — **S**
-- [ ] Accessibilité & responsive : passe finale — **S**
+### Phase D — Authentification 2 comptes (Supabase Auth)
+- [ ] Activer **Supabase Auth** (email/mot de passe), créer les 2 comptes — **S**
+- [ ] Intégrer `@supabase/ssr` : login, session, `middleware.ts` protégeant toutes les routes — **M**
+- [ ] Page de connexion simple + déconnexion — **S**
+- [ ] (Données **partagées** entre les 2 comptes — pas de séparation par utilisateur) — **—**
 
-### Phase 4 — Fonctionnel (nice-to-have)
-- [ ] Export comptable (CSV / PDF) — **M**
-- [ ] Date de décès + motif sur la mise en « mort » — **S**
-- [ ] Tableau de bord enrichi (marge par animal, alertes santé) — **M**
-- [ ] PWA installable / mode hors-ligne — **L**
+### Phase E — Déploiement Vercel
+- [ ] Brancher le repo GitHub `Rativore/gestion_mouton` sur Vercel — **S**
+- [ ] Variables d'environnement Vercel : `DATABASE_URL`, `DIRECT_URL` (+ clés Supabase) — **S**
+- [ ] Vérifier le **build** (`prisma generate` au build, `postinstall` si besoin) — **S**
+- [ ] Recette sur URL de prod depuis un téléphone — **S**
+
+### Phase F — Finitions & robustesse (en continu, après mise en ligne)
+- [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
+- [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
+- [ ] Recherche `mode: "insensitive"` ; sécuriser la suppression d'un animal vendu — **S**
+- [ ] **Zod** sur les Server Actions + messages d'erreur clairs — **M**
+- [ ] Export comptable (CSV / PDF), tableau de bord enrichi, date/motif de décès — **M**
+- [ ] **Factoriser la duplication restante** (repérée au tri du 17/07, laissée car non testable hors ligne) : helper de formatage `fmt` (répété dans 4 pages), helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation quasi identiques `bilanAnnuel`/`bilanGlobal`, type `EtatFormulaire` redéclaré dans les 6 actions, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
 
 ---
 
 ## 5. Ordre recommandé
 
-**Phase 0** (rapide) → **Phase 1** (Postgres + Decimal, à faire d'un bloc car les deux touchent le schéma) → **Phase 2** (photos, puis auth quand on ouvre à d'autres utilisateurs) → **Phases 3–4** en continu.
+**Phase A** (finir Supabase) → **Phase B** (photos, *le* prérequis technique pour Vercel) → **Phase C** (PWA, effet immédiat) → **Phase D** (auth) → **Phase E** (déploiement). La **Phase F** se traite en continu une fois l'app en ligne.
 
-> La Phase 1 est le vrai jalon « prod-ready » côté données. L'authentification (Phase 2) est le prérequis pour toute ouverture commerciale.
+> Jalons clés : **B** débloque le déploiement (sans stockage objet, pas de Vercel), **E** rend l'app réellement utilisable au quotidien depuis le téléphone. Le passage **`Decimal`** (F) n'est pas bloquant pour un usage simple mais reste recommandé avant de se fier aux chiffres comptables.
 
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (soir) — Migration SQLite → PostgreSQL (Supabase)
+- **🗄️ Bascule de la base sur Supabase.** `schema.prisma` passe en `provider = "postgresql"` avec `directUrl` (migrations sur le port direct 5432, requêtes applicatives sur le pooler 6543). `.env` (non versionné) contient `DATABASE_URL` (pooler, `pgbouncer=true`) et `DIRECT_URL` (direct). Anciennes migrations SQLite supprimées, **migration initiale PostgreSQL** régénérée (`prisma migrate diff`) dans `prisma/migrations/20260717000000_init/`.
+- **🚧 Contournement pare-feu Klesia.** Les ports Postgres (5432/6543) sont bloqués sur le réseau Klesia (`TcpTestSucceeded: False`) → `prisma migrate` échoue en `P1001`. Les tables ont donc été créées **via l'éditeur SQL de Supabase** (HTTPS/443). Base **vide** (aucun mouton, aucune dépense — volonté de l'utilisateur, il saisira lui-même).
+- **➡️ Conséquence.** L'app ne peut pas tourner depuis le poste Klesia (même blocage réseau). Cible d'exécution = **Vercel** ; dev local = réseau non filtré. Reste à baseliner l'historique de migration (`migrate resolve`) depuis un réseau qui atteint Supabase.
+- **🎯 Réorientation produit.** Cible clarifiée : **PWA mobile pour 2 utilisateurs**, simple, sans montée en charge. Plan de tâches (§4) réécrit en conséquence : photos → Supabase Storage, PWA, auth 2 comptes, déploiement Vercel.
+- **🧹 Tri du code (sans changement de comportement).** Retrait de code mort (`creerMouvementAction` inutilisée + ses imports dans `app/actions/comptabilite.ts`, constante `TYPES_FLUX`), constante `PERE_EXTERIEUR` hoistée dans `lib/constants.ts` (était dupliquée en dur entre `animal-form` et l'action), 2 corrections de texte (« Type d'vente » → « Type de vente » ; empty-state compta « Gains / Dépenses » → « Achat / Vente »), et remplacement du `README.md` racine (boilerplate `create-next-app`) par un vrai README pointant vers `docs/`. La duplication plus lourde est laissée et tracée en Phase F.
 
 ### 2026-07-17
 - **🐛 Correctif — date d'achat basculant dans le mois en cours.** `reconcilierAchat` (`lib/services/animaux.ts`) utilisait `d.dateEntree ?? new Date()` : dès que la date d'entrée était vide à l'enregistrement (typiquement en modifiant une bête), la date du mouvement comptable d'achat était réécrite à *aujourd'hui*. Désormais, en mise à jour on **conserve la date existante** du mouvement, et la date d'entrée est **obligatoire pour un achat** (validée côté action `app/actions/animaux.ts` + champ requis dans `components/animal-form.tsx`). La vente n'était pas concernée (pas de fallback).

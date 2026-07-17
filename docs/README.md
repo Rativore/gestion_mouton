@@ -17,14 +17,15 @@ Application de **gestion, traçabilité et comptabilité** d'un élevage de mout
 - **Comptabilité** : bilan par année (graphe mensuel) **ou toutes années confondues** (graphe par année) via le sélecteur, répartition par catégorie, journal des mouvements.
 - **Réglages** : devise, espèces d'animaux, catégories de gains/dépenses.
 
-Cible : web responsive (mono-utilisateur aujourd'hui), pensé pour évoluer en produit commercial.
+Cible : **application mobile (PWA) simple, pour 2 utilisateurs** (l'éleveur et un proche). Pas d'objectif de montée en charge — un outil personnel pour simplifier le suivi.
 
 ---
 
 ## 2. Stack
 
-**Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · SQLite · Tailwind 4.**
+**Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Tailwind 4.**
 Server Components (lecture) + Server Actions (écriture).
+Base hébergée sur **Supabase** (projet `dcomdmaaepacgbdqkdki`, région `eu-west-1`), déploiement visé sur **Vercel**.
 
 ---
 
@@ -33,8 +34,9 @@ Server Components (lecture) + Server Actions (écriture).
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm run seed       # (ré)injecte des données de démo
 ```
+
+La base (`.env` → `DATABASE_URL` / `DIRECT_URL`) pointe sur **Supabase**. Le fichier `.env` n'est **pas** versionné : le récupérer/recréer avec les chaînes de connexion Supabase (onglet **Connect → ORMs → Prisma**).
 
 Autres commandes utiles :
 ```bash
@@ -43,7 +45,7 @@ npx prisma migrate dev     # créer/appliquer une migration
 npm run build              # build de production
 ```
 
-### ⚠️ Pièges d'environnement (nous ont fait perdre du temps — à connaître)
+### ⚠️ Pièges d'environnement (à connaître)
 
 1. **Node : utiliser la v24, pas la v12.** La machine a nvm avec **v12.13 liée par défaut** → `next dev` plante (`Unexpected token '?'`). Node 24 est dans `C:\Program Files\nodejs`.
    - Fix ponctuel : `$env:Path = "C:\Program Files\nodejs;" + $env:Path`
@@ -55,9 +57,14 @@ npm run build              # build de production
    ```
    (Node 24 fait alors confiance au magasin de certificats Windows.)
 
-3. **OneDrive verrouille `.next`** : `npm run build` peut échouer avec `EPERM ... .next`. Arrêter le serveur avant, ou exclure `.next/` de la synchro OneDrive. Pour juste vérifier les types sans build : `npx tsc --noEmit`.
+3. **🔴 Le réseau Klesia bloque les ports PostgreSQL (5432/6543).** Impossible d'atteindre Supabase depuis le poste Klesia — ni pour migrer, ni pour faire tourner l'app en local. Contournements :
+   - **Migrations** : appliquer le SQL via l'**éditeur SQL de Supabase** (HTTPS/443, non bloqué). Le SQL est dans `prisma/migrations/*/migration.sql`.
+   - **Dev local** : utiliser un **réseau non filtré** (partage de connexion 4G, wifi perso).
+   - **Usage réel** : **déployer sur Vercel** — l'app tourne dans le cloud (accès Supabase OK), on y accède en HTTPS depuis n'importe où. Voir le plan dans [`docs/ANALYSE.md`](./ANALYSE.md).
 
-4. **Migration = serveur arrêté** : `prisma migrate`/`generate` échoue (`EPERM`) si un `next dev` tourne (moteur Prisma verrouillé). Arrêter le serveur, migrer, relancer.
+4. **OneDrive verrouille `.next`** : `npm run build` peut échouer avec `EPERM ... .next`. Arrêter le serveur avant, ou exclure `.next/` de la synchro OneDrive. Pour juste vérifier les types sans build : `npx tsc --noEmit`.
+
+5. **Migration = serveur arrêté** : `prisma migrate`/`generate` échoue (`EPERM`) si un `next dev` tourne (moteur Prisma verrouillé). Arrêter le serveur, migrer, relancer.
 
 ---
 
@@ -95,15 +102,18 @@ docs/                   Cette documentation
 
 ## 5. État du projet
 
-**V1 fonctionnelle** ✅ — toutes les fonctionnalités ci-dessus marchent en local (SQLite).
+**V1 fonctionnelle** ✅ — toutes les fonctionnalités ci-dessus marchent.
+**Base migrée sur PostgreSQL / Supabase** ✅ — schéma appliqué, tables créées (vides).
 
-**Prochaines étapes** → voir [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers la prod :
-1. **Phase 0** — stabilisation rapide (recherche insensible à la casse, suppression d'un animal vendu, messages d'erreur).
-2. **Phase 1** 🎯 — **PostgreSQL + montants `Float → Decimal`** (le vrai jalon prod-ready données).
-3. **Phase 2** — stockage photos (S3/R2), authentification (Auth.js), hébergement.
-4. **Phases 3–4** — Zod, tests, exports, PWA.
+**Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
+1. **Phase A** — finaliser la bascule Supabase (baseline des migrations, test de connexion hors Klesia).
+2. **Phase B** 🎯 — **photos → Supabase Storage** (le vrai chantier technique : le disque local ne marche pas sur Vercel).
+3. **Phase C** — **PWA** (installable sur téléphone, effet « app »).
+4. **Phase D** — **authentification 2 comptes** (Supabase Auth).
+5. **Phase E** — **déploiement Vercel**.
+6. **Phases F+** — finitions mobile, `Float → Decimal`, exports, tests.
 
 **Points d'attention connus** (détaillés dans ANALYSE.md) :
-- 🔴 Montants en `Float` → passer en `Decimal` avant compta réelle.
-- 🟠 Photos sur disque local → stockage objet pour un vrai serveur.
+- 🔴 Photos sur disque local → **Supabase Storage** (bloquant pour Vercel).
+- 🟠 Montants en `Float` → passer en `Decimal` avant compta « sérieuse ».
 - 🟡 Recherche sensible à la casse sur Postgres ; suppression d'un animal vendu à sécuriser.
