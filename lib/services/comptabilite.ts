@@ -24,7 +24,7 @@ export async function listerMouvements(filtre: FiltreMouvements) {
   const where: Prisma.MouvementComptableWhereInput = {};
   if (filtre.annee) where.date = borneAnnee(filtre.annee, filtre.mois);
   if (filtre.typeFlux) where.typeFlux = filtre.typeFlux;
-  return prisma.mouvementComptable.findMany({
+  const rows = await prisma.mouvementComptable.findMany({
     where,
     orderBy: { date: "desc" },
     include: {
@@ -32,6 +32,8 @@ export async function listerMouvements(filtre: FiltreMouvements) {
       animalAchat: true,
     },
   });
+  // Decimal → number sur le montant (seul champ monétaire lu en aval).
+  return rows.map((m) => ({ ...m, montant: m.montant.toNumber() }));
 }
 
 /** Années pour lesquelles il existe au moins un mouvement. */
@@ -79,16 +81,17 @@ export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
   let depenses = 0;
 
   for (const m of mouvements) {
+    const montant = m.montant.toNumber();
     const idx = m.date.getMonth();
     if (m.typeFlux === "gain") {
-      parMois[idx].gains += m.montant;
-      gains += m.montant;
+      parMois[idx].gains += montant;
+      gains += montant;
     } else {
-      parMois[idx].depenses += m.montant;
-      depenses += m.montant;
+      parMois[idx].depenses += montant;
+      depenses += montant;
     }
     const cle = `${m.typeFlux}::${m.categorie}`;
-    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + m.montant);
+    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + montant);
   }
 
   for (const m of parMois) m.solde = m.gains - m.depenses;
@@ -137,6 +140,7 @@ export async function bilanGlobal(): Promise<BilanGlobal> {
   let depenses = 0;
 
   for (const m of mouvements) {
+    const montant = m.montant.toNumber();
     const an = m.date.getFullYear();
     let bilan = anneeMap.get(an);
     if (!bilan) {
@@ -144,14 +148,14 @@ export async function bilanGlobal(): Promise<BilanGlobal> {
       anneeMap.set(an, bilan);
     }
     if (m.typeFlux === "gain") {
-      bilan.gains += m.montant;
-      gains += m.montant;
+      bilan.gains += montant;
+      gains += montant;
     } else {
-      bilan.depenses += m.montant;
-      depenses += m.montant;
+      bilan.depenses += montant;
+      depenses += montant;
     }
     const cle = `${m.typeFlux}::${m.categorie}`;
-    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + m.montant);
+    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + montant);
   }
 
   const parAnnee = [...anneeMap.values()]

@@ -136,7 +136,7 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] Suppression d'un animal vendu **sécurisée** : la vente liée et son mouvement de gain sont supprimés dans la transaction avant l'animal (sinon violation de clé étrangère) — **S**
 - [x] **Zod** sur les Server Actions : helper `lib/validation.ts` (`valider` + schémas réutilisables) appliqué aux actions de formulaire (vente, santé, catégorie, espèce, animal, saisie) avec messages FR clairs. Les actions à simple `id` et `parametres` gardent leur validation triviale — **M**
 - [~] **Mobile-first** : `inputMode="decimal"` sur les champs numériques (coût, prix, poids, montant) → clavier numérique sur mobile. Cibles tactiles déjà correctes. (Passe visuelle plus poussée possible plus tard.) — **M**
-- [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
+- [x] Montants **`Float → Decimal`** : `coutAchat`, `prix`, `poids`, `prixAuKilo`, `marge`, `montant` en `Decimal` (migration `20260717180000_montants_decimal`). Conversion `Decimal → number` **confinée à la couche services** (rien en Decimal ne sort des services → pages, formatage et composants clients inchangés). Frontières client garanties par `tsc` (props typées `number`) — **M**
 - [x] **Export comptable CSV** : route `app/comptabilite/export/route.ts` (`;` + BOM UTF-8, période via `?annee=`) + bouton « ↓ CSV » sur la page compta — **M**
 - [x] **Date + motif de décès** : colonnes `dateDeces`/`motifDeces` (migration additive `20260717170000_deces`), service `marquerMort`, action `marquerMortAction` (form + Zod), `components/deces-form.tsx`, affichage sur la fiche. Motifs dans `lib/constants.ts` (`MOTIFS_DECES`) — **M**
 - [ ] Export PDF, tableau de bord enrichi — **M**
@@ -157,6 +157,11 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase F (5) : montants Float → Decimal
+- **💶 Compta exacte.** `Animal.coutAchat`, `Vente.{prix,poids,prixAuKilo,marge}`, `MouvementComptable.montant` passés de `Float` (double precision) à `Decimal` (`numeric`) — migration `20260717180000_montants_decimal` (ALTER TYPE avec USING, données préservées).
+- **🧱 Stratégie sûre.** Conversion `Decimal → number` **confinée aux services** (`listerAnimaux`, `listerAnimauxPresents`, `getAnimal`, `listerMouvements`, `bilanAnnuel`/`bilanGlobal`, `listerVentes`, `vendreAnimal`) : aucun `Decimal` ne sort de la couche données, donc pages/formatage/composants clients inchangés. `tsc` garantit les frontières (props clients typées `number`). Écritures : Prisma accepte les `number` en entrée d'un champ `Decimal`.
+- **✅** `tsc` + build prod OK ; round-trip Decimal validé par probe (12,34 et 10,10 stockés/relus exactement). ⚠️ La migration a été appliquée à la base **avant** le push du code : courte fenêtre où la prod déployée (Float) tournait sur une base numeric — refermée par le déploiement immédiat.
 
 ### 2026-07-17 (réseau perso) — Phase F (4) : export CSV + décès
 - **📤 Export comptable CSV.** Route Handler `app/comptabilite/export/route.ts` (protégée par `requireUser`) : CSV des mouvements de la période (`?annee=YYYY` ou toutes), séparateur `;` + BOM UTF-8 (Excel FR), décimale virgule. Bouton « ↓ CSV » sur la page compta (balise `<a>` native pour déclencher le téléchargement).

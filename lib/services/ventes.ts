@@ -12,10 +12,17 @@ export type DonneesVente = {
 
 /** Historique complet des ventes, la plus récente d'abord. */
 export async function listerVentes() {
-  return prisma.vente.findMany({
+  const rows = await prisma.vente.findMany({
     orderBy: { date: "desc" },
     include: { animal: true },
   });
+  return rows.map((v) => ({
+    ...v,
+    prix: v.prix.toNumber(),
+    poids: v.poids?.toNumber() ?? null,
+    prixAuKilo: v.prixAuKilo?.toNumber() ?? null,
+    marge: v.marge?.toNumber() ?? null,
+  }));
 }
 
 export async function totalVentes() {
@@ -45,7 +52,7 @@ export async function vendreAnimal(d: DonneesVente) {
     }
 
     const prixAuKilo = d.poids && d.poids > 0 ? d.prix / d.poids : null;
-    const marge = d.prix - (animal.coutAchat ?? 0);
+    const marge = d.prix - Number(animal.coutAchat ?? 0);
 
     const mouvement = await tx.mouvementComptable.create({
       data: {

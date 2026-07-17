@@ -23,10 +23,12 @@ export async function listerAnimaux(filtre: FiltreAnimaux = {}) {
       { note: { contains: filtre.recherche, mode: "insensitive" } },
     ];
   }
-  return prisma.animal.findMany({
+  const rows = await prisma.animal.findMany({
     where,
     orderBy: [{ statut: "asc" }, { numero: "asc" }],
   });
+  // Decimal → number : rien en Decimal ne doit sortir de la couche services.
+  return rows.map((a) => ({ ...a, coutAchat: a.coutAchat?.toNumber() ?? null }));
 }
 
 /** Compteurs pour le tableau de bord / onglets (présents groupés par espèce). */
@@ -52,7 +54,7 @@ export async function compterAnimaux() {
 
 /** Fiche complète d'un animal (filiation, santé, vente). */
 export async function getAnimal(id: string) {
-  return prisma.animal.findUnique({
+  const a = await prisma.animal.findUnique({
     where: { id },
     include: {
       mere: true,
@@ -64,6 +66,25 @@ export async function getAnimal(id: string) {
       mouvementAchat: true,
     },
   });
+  if (!a) return null;
+  // Decimal → number sur les montants exposés (le reste — mère/père/enfants —
+  // n'est rendu que côté serveur, jamais sérialisé vers un composant client).
+  return {
+    ...a,
+    coutAchat: a.coutAchat?.toNumber() ?? null,
+    vente: a.vente
+      ? {
+          ...a.vente,
+          prix: a.vente.prix.toNumber(),
+          poids: a.vente.poids?.toNumber() ?? null,
+          prixAuKilo: a.vente.prixAuKilo?.toNumber() ?? null,
+          marge: a.vente.marge?.toNumber() ?? null,
+        }
+      : null,
+    mouvementAchat: a.mouvementAchat
+      ? { ...a.mouvementAchat, montant: a.mouvementAchat.montant.toNumber() }
+      : null,
+  };
 }
 
 /** Animaux utilisables comme parents (présents), pour les listes déroulantes. */
@@ -77,11 +98,12 @@ export async function listerParents(excludeId?: string) {
 
 /** Animaux encore dans le troupeau (pour l'action de vente). */
 export async function listerAnimauxPresents() {
-  return prisma.animal.findMany({
+  const rows = await prisma.animal.findMany({
     where: { statut: "present" },
     select: { id: true, numero: true, espece: true, coutAchat: true },
     orderBy: { numero: "asc" },
   });
+  return rows.map((a) => ({ ...a, coutAchat: a.coutAchat?.toNumber() ?? null }));
 }
 
 /** Données d'un animal telles que fournies par le formulaire. */

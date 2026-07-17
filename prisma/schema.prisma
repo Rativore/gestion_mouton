@@ -34,7 +34,7 @@ model Animal {
   // Provenance / entrée dans le troupeau
   origine    String    @default("naissance") // "naissance" | "achat"
   dateEntree DateTime?
-  coutAchat  Float? // coût d'achat (si acheté), sert au calcul de marge
+  coutAchat  Decimal? @db.Decimal(10, 2) // coût d'achat (si acheté), sert au calcul de marge
 
   // Filiation
   mereId      String?
@@ -80,12 +80,12 @@ model Vente {
   animalId   String   @unique
   animal     Animal   @relation(fields: [animalId], references: [id])
   date       DateTime
-  prix       Float
+  prix       Decimal  @db.Decimal(10, 2)
   acheteur   String?
-  poids      Float?
-  prixAuKilo Float?
+  poids      Decimal? @db.Decimal(8, 3)
+  prixAuKilo Decimal? @db.Decimal(10, 2)
   motif      String? // "boucherie" | "reproduction" | "reforme" | "autre"
-  marge      Float? // prix - coût d'achat/élevage estimé
+  marge      Decimal? @db.Decimal(10, 2) // prix - coût d'achat/élevage estimé
 
   mouvementId String?             @unique
   mouvement   MouvementComptable? @relation(fields: [mouvementId], references: [id])
@@ -100,7 +100,7 @@ model MouvementComptable {
   id        String   @id @default(cuid())
   typeFlux  String // "gain" | "depense"
   categorie String
-  montant   Float
+  montant   Decimal  @db.Decimal(10, 2)
   date      DateTime
   note      String?
 

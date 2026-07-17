@@ -17,10 +17,31 @@ export default async function ModifierAnimalPage({
   ]);
   if (!animal) notFound();
 
+  // Champs scalaires uniquement : on ne sérialise pas les relations
+  // (mère/père/enfants) vers le composant client.
+  const initial = {
+    id: animal.id,
+    numero: animal.numero,
+    espece: animal.espece,
+    sexe: animal.sexe,
+    race: animal.race,
+    dateNaissance: animal.dateNaissance,
+    couleur: animal.couleur,
+    signes: animal.signes,
+    origine: animal.origine,
+    dateEntree: animal.dateEntree,
+    coutAchat: animal.coutAchat,
+    mereId: animal.mereId,
+    pereId: animal.pereId,
+    pereExterieur: animal.pereExterieur,
+    note: animal.note,
+    photoUrl: animal.photoUrl,
+  };
+
   return (
     <>
       <PageHeader titre={`Modifier n°${animal.numero}`} />
-      <AnimalForm parents={parents} especes={especes} initial={animal} />
+      <AnimalForm parents={parents} especes={especes} initial={initial} />
     </>
   );
 }
