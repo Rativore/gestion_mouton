@@ -137,7 +137,9 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] **Zod** sur les Server Actions : helper `lib/validation.ts` (`valider` + schémas réutilisables) appliqué aux actions de formulaire (vente, santé, catégorie, espèce, animal, saisie) avec messages FR clairs. Les actions à simple `id` et `parametres` gardent leur validation triviale — **M**
 - [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
 - [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
-- [ ] Export comptable (CSV / PDF), tableau de bord enrichi, date/motif de décès — **M**
+- [x] **Export comptable CSV** : route `app/comptabilite/export/route.ts` (`;` + BOM UTF-8, période via `?annee=`) + bouton « ↓ CSV » sur la page compta — **M**
+- [x] **Date + motif de décès** : colonnes `dateDeces`/`motifDeces` (migration additive `20260717170000_deces`), service `marquerMort`, action `marquerMortAction` (form + Zod), `components/deces-form.tsx`, affichage sur la fiche. Motifs dans `lib/constants.ts` (`MOTIFS_DECES`) — **M**
+- [ ] Export PDF, tableau de bord enrichi — **M**
 - [ ] **Factoriser la duplication restante** — _partiellement fait_ :
   - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
   - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)
@@ -154,6 +156,11 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase F (4) : export CSV + décès
+- **📤 Export comptable CSV.** Route Handler `app/comptabilite/export/route.ts` (protégée par `requireUser`) : CSV des mouvements de la période (`?annee=YYYY` ou toutes), séparateur `;` + BOM UTF-8 (Excel FR), décimale virgule. Bouton « ↓ CSV » sur la page compta (balise `<a>` native pour déclencher le téléchargement).
+- **⚰️ Date + motif de décès.** Nouvelles colonnes `Animal.dateDeces` / `motifDeces` (migration **additive** `20260717170000_deces`, appliquée via SQL direct + `migrate resolve`). Service `marquerMort`, `marquerMortAction` passée en formulaire (Zod), `components/deces-form.tsx` (date optionnelle → aujourd'hui, motif parmi `MOTIFS_DECES`). Affichage date/motif sur la fiche quand l'animal est mort. Validé par probe (create → mort → vérif → nettoyage).
+- **✅** `tsc` + build prod OK.
 
 ### 2026-07-17 (réseau perso) — Phase F (3) : factorisation (partielle)
 - **♻️ `EtatFormulaire` centralisé** dans `lib/validation.ts` (les 5 redéclarations dans les actions supprimées). ⚠️ Piège Next : un module `"use server"` ne peut **exporter que des fonctions async** — impossible d'y re-exporter un type (`export type { EtatFormulaire } from …` casse le build « Export … doesn't exist »). Solution : les composants **et** les actions importent le type directement depuis `lib/validation`.

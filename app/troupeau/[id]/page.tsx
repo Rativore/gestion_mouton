@@ -3,19 +3,20 @@ import { notFound } from "next/navigation";
 import { getAnimal } from "@/lib/services/animaux";
 import {
   supprimerAnimalAction,
-  marquerMortAction,
   supprimerEvenementSanteAction,
 } from "@/app/actions/animaux";
 import { PageHeader, Card, Badge, LinkButton } from "@/components/ui";
 import { AnimalPhoto } from "@/components/animal-photo";
 import { ConfirmButton } from "@/components/confirm-button";
 import { SanteForm } from "@/components/sante-form";
+import { DecesForm } from "@/components/deces-form";
 import {
   SEXES,
   STATUTS,
   ORIGINES,
   TYPES_SANTE,
   MOTIFS_VENTE,
+  MOTIFS_DECES,
   labelDe,
 } from "@/lib/constants";
 import { listerEspeces, libelleEspece } from "@/lib/services/especes";
@@ -80,24 +81,14 @@ export default async function AnimalPage({
             <Badge tone={animal.statut as "present" | "vendu" | "mort"}>
               {labelDe(STATUTS, animal.statut)}
             </Badge>
-            <div className="flex gap-1">
-              {present && (
-                <ConfirmButton
-                  variant="neutral"
-                  confirmation="Marquer cet animal comme mort ?"
-                  action={marquerMortAction.bind(null, animal.id)}
-                >
-                  Décès
-                </ConfirmButton>
-              )}
-              <ConfirmButton
-                confirmation={`Supprimer définitivement l'animal n°${animal.numero} ? Cette action est irréversible.`}
-                action={supprimerAnimalAction.bind(null, animal.id)}
-              >
-                Supprimer
-              </ConfirmButton>
-            </div>
+            <ConfirmButton
+              confirmation={`Supprimer définitivement l'animal n°${animal.numero} ? Cette action est irréversible.`}
+              action={supprimerAnimalAction.bind(null, animal.id)}
+            >
+              Supprimer
+            </ConfirmButton>
           </div>
+          {present && <DecesForm animalId={animal.id} />}
         </div>
 
         <div className="space-y-6">
@@ -115,6 +106,15 @@ export default async function AnimalPage({
               />
               <Info label="Âge" valeur={calculerAge(animal.dateNaissance)} />
               <Info label="Signes" valeur={animal.signes} />
+              {animal.statut === "mort" && (
+                <>
+                  <Info label="Décès" valeur={formatDate(animal.dateDeces)} />
+                  <Info
+                    label="Motif décès"
+                    valeur={labelDe(MOTIFS_DECES, animal.motifDeces)}
+                  />
+                </>
+              )}
             </dl>
             {animal.note && (
               <p className="mt-4 rounded-lg bg-border/30 p-3 text-sm">

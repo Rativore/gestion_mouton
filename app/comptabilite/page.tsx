@@ -116,11 +116,20 @@ export default async function ComptabilitePage({
         )}
 
         <Card>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="font-semibold">Mouvements {libellePeriode}</h2>
-            <LinkButton href="/ventes" variant="neutral">
-              + Saisir
-            </LinkButton>
+            <div className="flex items-center gap-2">
+              {/* <a> natif (pas next/link) pour déclencher le téléchargement. */}
+              <a
+                href={`/comptabilite/export?annee=${toutes ? TOUTES_ANNEES : annee}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold transition-colors hover:bg-border/50"
+              >
+                ↓ CSV
+              </a>
+              <LinkButton href="/ventes" variant="neutral">
+                + Saisir
+              </LinkButton>
+            </div>
           </div>
           {mouvements.length === 0 ? (
             <p className="text-sm text-muted">

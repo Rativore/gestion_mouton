@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import {
   creerAnimal,
   modifierAnimal,
-  majAnimal,
+  marquerMort,
   supprimerAnimal,
   numeroExiste,
   ajouterEvenementSante,
@@ -26,6 +26,7 @@ import {
   texteRequis,
   texteOptionnel as zTexteOptionnel,
   dateRequise,
+  dateOptionnelle as zDateOptionnelle,
   type EtatFormulaire,
 } from "@/lib/validation";
 
@@ -41,6 +42,12 @@ const schemaSante = z.object({
   type: texteRequis("Type et date sont obligatoires."),
   date: dateRequise("Type et date sont obligatoires."),
   note: zTexteOptionnel,
+});
+
+const schemaDeces = z.object({
+  animalId: texteRequis("Animal manquant."),
+  dateDeces: zDateOptionnelle,
+  motifDeces: zTexteOptionnel,
 });
 
 export async function enregistrerAnimalAction(
@@ -129,11 +136,21 @@ export async function supprimerAnimalAction(id: string) {
   redirect("/troupeau");
 }
 
-export async function marquerMortAction(id: string) {
+export async function marquerMortAction(
+  _prev: EtatFormulaire,
+  formData: FormData,
+): Promise<EtatFormulaire> {
   await requireUser();
-  await majAnimal(id, { statut: "mort" });
+  const v = valider(schemaDeces, formData);
+  if ("error" in v) return { error: v.error };
+  const { animalId, dateDeces, motifDeces } = v.data;
+  await marquerMort(animalId, {
+    dateDeces: dateDeces ?? new Date(),
+    motifDeces: motifDeces ?? null,
+  });
   revalidatePath("/troupeau");
-  revalidatePath(`/troupeau/${id}`);
+  revalidatePath(`/troupeau/${animalId}`);
+  return {};
 }
 
 export async function ajouterEvenementSanteAction(

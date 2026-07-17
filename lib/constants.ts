@@ -36,6 +36,15 @@ export const MOTIFS_VENTE = [
   { value: "autre", label: "Autre" },
 ] as const;
 
+export const MOTIFS_DECES = [
+  { value: "maladie", label: "Maladie" },
+  { value: "predateur", label: "Prédateur" },
+  { value: "accident", label: "Accident" },
+  { value: "mortalite", label: "Mortalité naturelle" },
+  { value: "abattage", label: "Abattage" },
+  { value: "autre", label: "Autre" },
+] as const;
+
 // Catégories fournies par défaut (toujours présentes). L'utilisateur peut en
 // ajouter d'autres, stockées dans la table Categorie.
 export const CATEGORIES_DEFAUT: Record<"gain" | "depense", string[]> = {

@@ -27,6 +27,10 @@ model Animal {
   statut        String    @default("present") // "present" | "vendu" | "mort"
   note          String?
 
+  // Décès (renseignés quand statut = "mort")
+  dateDeces  DateTime?
+  motifDeces String?
+
   // Provenance / entrée dans le troupeau
   origine    String    @default("naissance") // "naissance" | "achat"
   dateEntree DateTime?

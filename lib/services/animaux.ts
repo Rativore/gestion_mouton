@@ -210,6 +210,21 @@ export async function majAnimal(id: string, data: Prisma.AnimalUpdateInput) {
   return prisma.animal.update({ where: { id }, data });
 }
 
+/** Marque un animal comme mort, avec sa date et son motif de décès. */
+export async function marquerMort(
+  id: string,
+  data: { dateDeces: Date; motifDeces: string | null },
+) {
+  return prisma.animal.update({
+    where: { id },
+    data: {
+      statut: "mort",
+      dateDeces: data.dateDeces,
+      motifDeces: data.motifDeces,
+    },
+  });
+}
+
 /**
  * Supprime un animal et les écritures comptables liées (dépense d'achat et/ou
  * gain de vente). La vente éventuelle est supprimée d'abord : sans cela, la
