@@ -104,9 +104,10 @@ docs/                   Cette documentation
 
 **V1 fonctionnelle** ✅ — toutes les fonctionnalités ci-dessus marchent.
 **Base migrée sur PostgreSQL / Supabase** ✅ — schéma appliqué, tables créées (vides).
+**Phase A terminée** ✅ — `.env` basculé sur Supabase, migration baselinée, connexion app validée (lectures + écriture) depuis le réseau perso.
 
 **Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
-1. **Phase A** — finaliser la bascule Supabase (baseline des migrations, test de connexion hors Klesia).
+1. ~~**Phase A** — finaliser la bascule Supabase~~ ✅ **faite**.
 2. **Phase B** 🎯 — **photos → Supabase Storage** (le vrai chantier technique : le disque local ne marche pas sur Vercel).
 3. **Phase C** — **PWA** (installable sur téléphone, effet « app »).
 4. **Phase D** — **authentification 2 comptes** (Supabase Auth).

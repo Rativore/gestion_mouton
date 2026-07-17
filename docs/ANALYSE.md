@@ -86,13 +86,13 @@ Classés par sévérité. Références fichier entre parenthèses.
 Effort indicatif : **S** = < ½ j · **M** = ½–1 j · **L** = 1–3 j.
 Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hébergée sur **Vercel + Supabase**. On vise le simple et le robuste, pas la scalabilité.
 
-### Phase A — Finaliser la bascule Supabase _(en cours)_
+### Phase A — Finaliser la bascule Supabase ✅ _(terminée le 17/07 depuis le réseau perso)_
 - [x] Schéma Prisma → `provider = "postgresql"` + `directUrl` — **S**
 - [x] `.env` avec les connexions Supabase (pooler 6543 + directe 5432) — **S**
 - [x] Générer la migration initiale PostgreSQL (`prisma/migrations/*/migration.sql`) — **S**
 - [x] Créer les tables sur Supabase (via l'éditeur SQL, contournement du pare-feu Klesia) — **S**
-- [ ] **Baseliner l'historique de migration** : depuis un réseau non filtré, `prisma migrate resolve --applied <migration>` pour que Prisma considère l'init comme appliquée — **S**
-- [ ] **Tester la connexion de l'app** depuis un réseau non filtré (partage 4G) : `npm run dev`, créer un animal, vérifier qu'il apparaît dans Supabase — **S**
+- [x] **Baseliner l'historique de migration** : `prisma migrate resolve --applied 20260717000000_init` → « Database schema is up to date! » — **S**
+- [x] **Tester la connexion de l'app** : `npm run dev` OK, pages `/ /troupeau /comptabilite /ventes` en 200, écriture Supabase validée (create/count/delete d'un animal de test) — **S**
 
 ### Phase B — Photos sur Supabase Storage 🎯 _(chantier technique n°1, bloquant Vercel)_
 - [ ] Créer un **bucket** Supabase Storage `animaux` (lecture publique) — **S**
@@ -138,6 +138,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase A terminée : app connectée à Supabase
+- **🔌 `.env` basculé sur Supabase.** Il pointait encore sur l'ancienne base SQLite (`file:./dev.db`) : remplacé par `DATABASE_URL` (pooler 6543, `pgbouncer=true`) et `DIRECT_URL` (direct 5432). `.env` confirmé ignoré par git.
+- **✅ Migration baselinée.** `prisma generate` OK, puis `prisma migrate resolve --applied 20260717000000_init` (les 7 tables existaient déjà, créées via l'éditeur SQL) → `migrate status` = « Database schema is up to date! ».
+- **✅ Connexion validée de bout en bout.** `npm run dev` démarre, `/ /troupeau /comptabilite /ventes` répondent en 200 (lectures via le pooler), et une écriture test (create → count → delete d'un `Animal`) a bien commit sur Supabase.
+- **➡️ Suite.** Phase A close. Prochain jalon : **Phase B — photos sur Supabase Storage** (prérequis technique du déploiement Vercel).
 
 ### 2026-07-17 (soir) — Migration SQLite → PostgreSQL (Supabase)
 - **🗄️ Bascule de la base sur Supabase.** `schema.prisma` passe en `provider = "postgresql"` avec `directUrl` (migrations sur le port direct 5432, requêtes applicatives sur le pooler 6543). `.env` (non versionné) contient `DATABASE_URL` (pooler, `pgbouncer=true`) et `DIRECT_URL` (direct). Anciennes migrations SQLite supprimées, **migration initiale PostgreSQL** régénérée (`prisma migrate diff`) dans `prisma/migrations/20260717000000_init/`.
