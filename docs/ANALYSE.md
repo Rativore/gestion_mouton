@@ -104,11 +104,14 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 > **Validation** : `tsc --noEmit` OK ; test Storage de bout en bout (upload clé secrète → URL publique → lecture HTTP 200 `image/png` → suppression) ; pages `/troupeau/nouveau` et compagnie en 200 (la chaîne action → upload → client Supabase s'initialise sans erreur).
 > **Clés `.env`** : `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (public), `SUPABASE_SECRET_KEY` (serveur uniquement — jamais exposée au navigateur).
 
-### Phase C — PWA (effet « app mobile »)
-- [ ] `app/manifest.ts` (ou `public/manifest.json`) : nom, `display: standalone`, couleurs, orientation — **S**
-- [ ] Icônes **192×192** et **512×512** (+ `apple-touch-icon`) — **S**
-- [ ] Service worker minimal pour l'installabilité (`next-pwa` ou implémentation manuelle) — **M**
-- [ ] Balises `<meta viewport>` / theme-color, test « Ajouter à l'écran d'accueil » sur iOS + Android — **S**
+### Phase C — PWA (effet « app mobile ») ✅ _(terminée le 17/07)_
+- [x] `app/manifest.ts` : nom, `short_name`, `display: standalone`, `orientation: portrait`, couleurs (theme `#3f7d3a`, bg `#f6f7f4`), `lang: fr` — **S**
+- [x] Icônes **192×192** et **512×512** (+ maskable) générées par code via `ImageResponse` (`app/icon.tsx` + `generateImageMetadata`), et `apple-touch-icon` 180×180 (`app/apple-icon.tsx`). Illustration mouton auto-suffisante dans `components/icon-art.tsx` (formes only, **aucune dépendance réseau** — pas d'emoji CDN) — **S**
+- [x] Service worker minimal `public/sw.js` (réseau d'abord pour les navigations, repli hors-ligne) + enregistrement `components/pwa-register.tsx` (prod uniquement, pour ne pas gêner le HMR) — **M**
+- [x] `viewport` export (theme-color clair/sombre, `width=device-width`) + métadonnées iOS `appleWebApp` (title « Troupeau », status bar). Next émet `mobile-web-app-capable` (standard moderne) — **S**
+
+> **Validation** : `tsc --noEmit` OK ; **build de production OK** (icônes SSG `/icon/192` `/icon/512`, `/apple-icon` et `/manifest.webmanifest` statiques) ; icône 512 vérifiée visuellement ; smoke test `npm start` → `/ /sw.js /manifest.webmanifest /icon/512` en 200.
+> **Reste à faire par l'utilisateur** : test réel « Ajouter à l'écran d'accueil » sur un vrai iPhone/Android (nécessite HTTPS → à faire une fois déployé sur Vercel, Phase E).
 
 ### Phase D — Authentification 2 comptes (Supabase Auth)
 - [ ] Activer **Supabase Auth** (email/mot de passe), créer les 2 comptes — **S**
@@ -141,6 +144,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase C terminée : PWA installable
+- **📱 App transformée en PWA.** `app/manifest.ts` (standalone, portrait, couleurs de la marque). Icônes **générées par code** avec `ImageResponse`/`next/og` : `app/icon.tsx` (`generateImageMetadata` → 192 + 512, dont maskable) et `app/apple-icon.tsx` (180). L'illustration (mouton stylisé sur fond vert) vit dans `components/icon-art.tsx` — **uniquement des formes**, donc aucune dépendance réseau au build (choix délibéré : l'option emoji de Satori aurait forcé un fetch CDN).
+- **🔌 Service worker.** `public/sw.js` minimal, stratégie *réseau d'abord* pour les navigations (jamais de contenu périmé en ligne, repli hors-ligne sur la dernière page vue). Enregistré par `components/pwa-register.tsx` **en production seulement** (un SW casse le HMR en dev).
+- **🎨 Métadonnées mobiles.** Export `viewport` (theme-color clair `#3f7d3a` / sombre `#1d2118`, `width=device-width`) + `appleWebApp` (mode standalone iOS, titre « Troupeau »). Next injecte `<link rel="manifest">` et `mobile-web-app-capable` automatiquement.
+- **✅ Validé.** `tsc` OK ; **build de production OK** (icônes en SSG, manifest statique) ; icône 512 inspectée visuellement ; smoke test `npm start` (pages, `/sw.js`, manifest, icônes en 200).
+- **➡️ Suite.** Le test réel « Ajouter à l'écran d'accueil » se fera sur téléphone une fois l'app en HTTPS. Prochain jalon : **Phase D — authentification 2 comptes**, ou directement **Phase E — déploiement Vercel** pour tester la PWA sur mobile.
 
 ### 2026-07-17 (réseau perso) — Phase B terminée : photos sur Supabase Storage
 - **🖼️ Upload photos migré vers Supabase Storage.** Bucket public `animaux` créé. `lib/upload.ts` réécrit : n'écrit plus sur disque (`public/uploads/`), envoie le fichier au bucket via `@supabase/supabase-js` et renvoie l'URL publique absolue. Nouveau module `lib/supabase.ts` : client à clé secrète, protégé par `server-only` (jamais côté navigateur).

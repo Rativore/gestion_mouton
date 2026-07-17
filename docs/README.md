@@ -107,13 +107,14 @@ docs/                   Cette documentation
 **Base migrée sur PostgreSQL / Supabase** ✅ — schéma appliqué, tables créées (vides).
 **Phase A terminée** ✅ — `.env` basculé sur Supabase, migration baselinée, connexion app validée (lectures + écriture) depuis le réseau perso.
 **Phase B terminée** ✅ — photos uploadées vers **Supabase Storage** (bucket `animaux`), disque local abandonné → dernier verrou avant Vercel levé.
+**Phase C terminée** ✅ — **PWA** installable : manifest, icônes générées (192/512/apple), theme-color, service worker. Test « écran d'accueil » à faire sur mobile une fois en HTTPS.
 
 **Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
 1. ~~**Phase A** — finaliser la bascule Supabase~~ ✅ **faite**.
 2. ~~**Phase B** — photos → Supabase Storage~~ ✅ **faite**.
-3. **Phase C** 🎯 — **PWA** (installable sur téléphone, effet « app »).
+3. ~~**Phase C** — PWA (installable, effet « app »)~~ ✅ **faite**.
 4. **Phase D** — **authentification 2 comptes** (Supabase Auth).
-5. **Phase E** — **déploiement Vercel**.
+5. **Phase E** 🎯 — **déploiement Vercel** (débloque le test PWA sur mobile).
 6. **Phases F+** — finitions mobile, `Float → Decimal`, exports, tests.
 
 **Points d'attention connus** (détaillés dans ANALYSE.md) :
