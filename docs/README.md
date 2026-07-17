@@ -84,7 +84,8 @@ lib/
   constants.ts          Constantes métier (espèces défaut, catégories, devises…)
   utils.ts              Formatage (montant, date, âge)
   prisma.ts             Client Prisma singleton
-  upload.ts             Enregistrement des photos (local pour l'instant)
+  upload.ts             Upload des photos vers Supabase Storage (bucket animaux)
+  supabase.ts           Client Supabase à clé secrète (server-only)
 components/*.tsx         UI (formulaires, nav, cartes, boutons…)
 prisma/
   schema.prisma         Modèle de données
@@ -105,16 +106,17 @@ docs/                   Cette documentation
 **V1 fonctionnelle** ✅ — toutes les fonctionnalités ci-dessus marchent.
 **Base migrée sur PostgreSQL / Supabase** ✅ — schéma appliqué, tables créées (vides).
 **Phase A terminée** ✅ — `.env` basculé sur Supabase, migration baselinée, connexion app validée (lectures + écriture) depuis le réseau perso.
+**Phase B terminée** ✅ — photos uploadées vers **Supabase Storage** (bucket `animaux`), disque local abandonné → dernier verrou avant Vercel levé.
 
 **Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
 1. ~~**Phase A** — finaliser la bascule Supabase~~ ✅ **faite**.
-2. **Phase B** 🎯 — **photos → Supabase Storage** (le vrai chantier technique : le disque local ne marche pas sur Vercel).
-3. **Phase C** — **PWA** (installable sur téléphone, effet « app »).
+2. ~~**Phase B** — photos → Supabase Storage~~ ✅ **faite**.
+3. **Phase C** 🎯 — **PWA** (installable sur téléphone, effet « app »).
 4. **Phase D** — **authentification 2 comptes** (Supabase Auth).
 5. **Phase E** — **déploiement Vercel**.
 6. **Phases F+** — finitions mobile, `Float → Decimal`, exports, tests.
 
 **Points d'attention connus** (détaillés dans ANALYSE.md) :
-- 🔴 Photos sur disque local → **Supabase Storage** (bloquant pour Vercel).
+- ✅ ~~Photos sur disque local~~ → **Supabase Storage** (fait, verrou Vercel levé).
 - 🟠 Montants en `Float` → passer en `Decimal` avant compta « sérieuse ».
 - 🟡 Recherche sensible à la casse sur Postgres ; suppression d'un animal vendu à sécuriser.

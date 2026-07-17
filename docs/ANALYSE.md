@@ -94,12 +94,15 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] **Baseliner l'historique de migration** : `prisma migrate resolve --applied 20260717000000_init` → « Database schema is up to date! » — **S**
 - [x] **Tester la connexion de l'app** : `npm run dev` OK, pages `/ /troupeau /comptabilite /ventes` en 200, écriture Supabase validée (create/count/delete d'un animal de test) — **S**
 
-### Phase B — Photos sur Supabase Storage 🎯 _(chantier technique n°1, bloquant Vercel)_
-- [ ] Créer un **bucket** Supabase Storage `animaux` (lecture publique) — **S**
-- [ ] Réécrire `lib/upload.ts` : upload vers Storage via l'API HTTPS Supabase, renvoyer l'URL publique — **M**
-- [ ] Adapter `components/animal-photo.tsx` si besoin (URL absolue Supabase au lieu de `/uploads/...`) — **S**
-- [ ] Migrer les 2 photos locales existantes vers le bucket (ou repartir de zéro, base vide) — **S**
-- [ ] Retirer `public/uploads/` du flux de l'app — **S**
+### Phase B — Photos sur Supabase Storage ✅ _(terminée le 17/07)_
+- [x] Créer un **bucket** Supabase Storage `animaux` (lecture publique) — **S**
+- [x] Réécrire `lib/upload.ts` : upload vers Storage via `@supabase/supabase-js`, renvoie l'URL publique. Nouveau module `lib/supabase.ts` (`server-only` + client clé secrète). — **M**
+- [x] `components/animal-photo.tsx` : aucun changement nécessaire (utilise déjà un `<img src>` brut, pas `next/image`) — l'URL absolue Supabase fonctionne telle quelle — **S**
+- [x] Rien à migrer : base Supabase **vide**, on repart de zéro. Orphelins de test locaux (`public/uploads/*.webp`) supprimés — **S**
+- [x] `lib/upload.ts` n'écrit plus sur disque ; `public/uploads/` sort du flux (dossier conservé vide avec `.gitkeep`) — **S**
+
+> **Validation** : `tsc --noEmit` OK ; test Storage de bout en bout (upload clé secrète → URL publique → lecture HTTP 200 `image/png` → suppression) ; pages `/troupeau/nouveau` et compagnie en 200 (la chaîne action → upload → client Supabase s'initialise sans erreur).
+> **Clés `.env`** : `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (public), `SUPABASE_SECRET_KEY` (serveur uniquement — jamais exposée au navigateur).
 
 ### Phase C — PWA (effet « app mobile »)
 - [ ] `app/manifest.ts` (ou `public/manifest.json`) : nom, `display: standalone`, couleurs, orientation — **S**
@@ -138,6 +141,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase B terminée : photos sur Supabase Storage
+- **🖼️ Upload photos migré vers Supabase Storage.** Bucket public `animaux` créé. `lib/upload.ts` réécrit : n'écrit plus sur disque (`public/uploads/`), envoie le fichier au bucket via `@supabase/supabase-js` et renvoie l'URL publique absolue. Nouveau module `lib/supabase.ts` : client à clé secrète, protégé par `server-only` (jamais côté navigateur).
+- **🔑 Nouvelles clés `.env`** : `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` (publique), `SUPABASE_SECRET_KEY` (serveur uniquement). Nouvelles deps : `@supabase/supabase-js`, `server-only`.
+- **✅ Validé** : `tsc --noEmit` OK ; test Storage complet (upload → URL publique → lecture HTTP 200 → suppression) ; pages 200. `components/animal-photo.tsx` inchangé (l'`<img src>` accepte l'URL absolue).
+- **🧹** Orphelins de test `public/uploads/*.webp` (base vide) supprimés ; dossier conservé vide avec `.gitkeep`.
+- **➡️ Suite.** Le dernier verrou technique du déploiement Vercel est levé. Prochain jalon : **Phase C — PWA**.
 
 ### 2026-07-17 (réseau perso) — Phase A terminée : app connectée à Supabase
 - **🔌 `.env` basculé sur Supabase.** Il pointait encore sur l'ancienne base SQLite (`file:./dev.db`) : remplacé par `DATABASE_URL` (pooler 6543, `pgbouncer=true`) et `DIRECT_URL` (direct 5432). `.env` confirmé ignoré par git.

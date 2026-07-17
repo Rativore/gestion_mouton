@@ -1,12 +1,19 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
+import { supabaseAdmin, BUCKET_PHOTOS } from "@/lib/supabase";
 
-const DOSSIER_UPLOAD = path.join(process.cwd(), "public", "uploads");
 const EXTENSIONS_OK = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
+const TYPES_MIME: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
 
 /**
- * Enregistre une photo envoyée via un formulaire dans public/uploads et
- * renvoie le chemin public (ex: /uploads/xxx.jpg), ou null si aucun fichier.
+ * Envoie une photo (issue d'un formulaire) vers Supabase Storage (bucket
+ * public `animaux`) et renvoie son URL publique absolue, ou null si aucun
+ * fichier. Le disque local n'est pas utilisé : Vercel a un système de fichiers
+ * éphémère et en lecture seule en serverless.
  */
 export async function enregistrerPhoto(
   fichier: FormDataEntryValue | null,
@@ -23,9 +30,19 @@ export async function enregistrerPhoto(
     throw new Error("Image trop lourde (8 Mo maximum).");
   }
 
-  await mkdir(DOSSIER_UPLOAD, { recursive: true });
   const nom = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(DOSSIER_UPLOAD, nom), buffer);
-  return `/uploads/${nom}`;
+
+  const { error } = await supabaseAdmin.storage
+    .from(BUCKET_PHOTOS)
+    .upload(nom, buffer, {
+      contentType: TYPES_MIME[ext],
+      upsert: false,
+    });
+  if (error) {
+    throw new Error(`Échec de l'envoi de la photo : ${error.message}`);
+  }
+
+  const { data } = supabaseAdmin.storage.from(BUCKET_PHOTOS).getPublicUrl(nom);
+  return data.publicUrl;
 }
