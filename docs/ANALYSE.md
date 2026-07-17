@@ -113,11 +113,15 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 > **Validation** : `tsc --noEmit` OK ; **build de production OK** (icônes SSG `/icon/192` `/icon/512`, `/apple-icon` et `/manifest.webmanifest` statiques) ; icône 512 vérifiée visuellement ; smoke test `npm start` → `/ /sw.js /manifest.webmanifest /icon/512` en 200.
 > **Reste à faire par l'utilisateur** : test réel « Ajouter à l'écran d'accueil » sur un vrai iPhone/Android (nécessite HTTPS → à faire une fois déployé sur Vercel, Phase E).
 
-### Phase D — Authentification 2 comptes (Supabase Auth)
-- [ ] Activer **Supabase Auth** (email/mot de passe), créer les 2 comptes — **S**
-- [ ] Intégrer `@supabase/ssr` : login, session, `middleware.ts` protégeant toutes les routes — **M**
-- [ ] Page de connexion simple + déconnexion — **S**
-- [ ] (Données **partagées** entre les 2 comptes — pas de séparation par utilisateur) — **—**
+### Phase D — Authentification 2 comptes (Supabase Auth) ✅ _(code terminé le 17/07)_
+- [x] Supabase Auth email/mot de passe **actif** (vérifié : création via API admin + `signInWithPassword` OK). Reste à créer les 2 vrais comptes (dashboard) — **S**
+- [x] `@supabase/ssr` intégré : `lib/supabase/server.ts` (client lié aux cookies) + `lib/supabase/proxy.ts` (refresh session). ⚠️ **Next 16 : `middleware.ts` → `proxy.ts`** (fonction `proxy`, runtime Node.js). Le proxy protège **toutes** les routes (redirection vers `/login` si pas de session) sauf assets/icônes/manifest/sw — **M**
+- [x] Page `/login` (`components/login-form.tsx` + action `connexionAction`) + **déconnexion** (`deconnexionAction`, bouton dans l'en-tête). Habillage extrait dans `components/app-chrome.tsx` (masque la nav sur `/login`) — **S**
+- [x] Données **partagées** entre comptes (pas de séparation par utilisateur) — **—**
+
+> **Validation** : `tsc` OK ; **build prod OK** (`ƒ Proxy (Middleware)` présent) ; auth backend testé (create/signin/delete via probe) ; proxy testé (routes protégées → 307 `/login`, `/login`+icônes+manifest+sw en 200) ; formulaire de login rendu.
+> **⚠️ Sécurité — durcissement Phase F** : la protection repose sur le proxy, qui couvre bien les Server Actions (POST sur leur route). La doc Next recommande en plus un `requireUser()` **dans chaque action** (défense en profondeur si le `matcher` change un jour). À ajouter en Phase F.
+> **Env Vercel (Phase E)** : `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY` (côté serveur) en plus des `DATABASE_URL`/`DIRECT_URL`/`SUPABASE_SECRET_KEY`.
 
 ### Phase E — Déploiement Vercel
 - [ ] Brancher le repo GitHub `Rativore/gestion_mouton` sur Vercel — **S**
@@ -144,6 +148,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase D : authentification (Supabase Auth)
+- **🔐 App protégée par authentification.** Intégration `@supabase/ssr` : `lib/supabase/server.ts` (client lié aux cookies via `next/headers`) et `lib/supabase/proxy.ts` (refresh de session). Un `proxy.ts` racine redirige toute route vers `/login` sans session valide (`getUser()`), en laissant publics les assets, icônes, manifest et `sw.js`.
+- **⚠️ Piège Next 16.** `middleware.ts` a été **renommé `proxy.ts`** (fonction `proxy`, runtime Node.js par défaut) — lu dans `node_modules/next/dist/docs/.../proxy.md`. Le build confirme `ƒ Proxy (Middleware)`.
+- **🧩 UI.** Page `/login` épurée (`app/login/page.tsx` + `components/login-form.tsx` en `useActionState`), actions `connexionAction`/`deconnexionAction` (`app/actions/auth.ts`). L'en-tête + nav ont été extraits dans `components/app-chrome.tsx` (client) qui masque l'habillage sur `/login` et porte le bouton de déconnexion.
+- **✅ Validé.** `tsc` OK ; build prod OK ; auth backend testé (create/signin/delete par probe, clé secrète + publishable) ; proxy testé (307 → `/login` sur routes protégées, 200 sur `/login`/icônes/manifest/sw) ; formulaire rendu.
+- **➡️ Reste.** Créer les 2 vrais comptes (dashboard Supabase ou API admin) ; en Phase F, ajouter `requireUser()` dans chaque Server Action (défense en profondeur). Prochain jalon : **Phase E — déploiement Vercel** (débloque le test PWA + auth sur mobile).
 
 ### 2026-07-17 (réseau perso) — Phase C terminée : PWA installable
 - **📱 App transformée en PWA.** `app/manifest.ts` (standalone, portrait, couleurs de la marque). Icônes **générées par code** avec `ImageResponse`/`next/og` : `app/icon.tsx` (`generateImageMetadata` → 192 + 512, dont maskable) et `app/apple-icon.tsx` (180). L'illustration (mouton stylisé sur fond vert) vit dans `components/icon-art.tsx` — **uniquement des formes**, donc aucune dépendance réseau au build (choix délibéré : l'option emoji de Satori aurait forcé un fetch CDN).
