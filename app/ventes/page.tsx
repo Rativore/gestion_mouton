@@ -10,7 +10,7 @@ import { SaisieForm } from "@/components/saisie-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import { CATEGORIE_VENTE_ANIMAL, CATEGORIE_ACHAT_ANIMAL } from "@/lib/constants";
 import { getDevise } from "@/lib/services/parametres";
-import { creerFmt, formatDate } from "@/lib/utils";
+import { creerFmt, formatDate, lienTri, flecheTri } from "@/lib/utils";
 
 type Tri = "date" | "type" | "montant";
 
@@ -51,14 +51,9 @@ export default async function AchatVentePage({
     );
   });
 
-  const hrefTri = (col: Tri) => {
-    const p = new URLSearchParams();
-    p.set("tri", col);
-    p.set("ordre", tri === col && ordre === "desc" ? "asc" : "desc");
-    return `/ventes?${p.toString()}`;
-  };
-  const fleche = (col: Tri) =>
-    tri === col ? (ordre === "asc" ? " ↑" : " ↓") : "";
+  const hrefTri = (col: Tri) =>
+    lienTri("/ventes", {}, col, tri, ordre, "desc");
+  const fleche = (col: Tri) => flecheTri(col, tri, ordre);
   const triLabels: { k: Tri; l: string }[] = [
     { k: "date", l: "Date" },
     { k: "type", l: "Type" },

@@ -135,7 +135,7 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] Recherche `mode: "insensitive"` (Postgres sensible à la casse) — **S**
 - [x] Suppression d'un animal vendu **sécurisée** : la vente liée et son mouvement de gain sont supprimés dans la transaction avant l'animal (sinon violation de clé étrangère) — **S**
 - [x] **Zod** sur les Server Actions : helper `lib/validation.ts` (`valider` + schémas réutilisables) appliqué aux actions de formulaire (vente, santé, catégorie, espèce, animal, saisie) avec messages FR clairs. Les actions à simple `id` et `parametres` gardent leur validation triviale — **M**
-- [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
+- [~] **Mobile-first** : `inputMode="decimal"` sur les champs numériques (coût, prix, poids, montant) → clavier numérique sur mobile. Cibles tactiles déjà correctes. (Passe visuelle plus poussée possible plus tard.) — **M**
 - [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
 - [x] **Export comptable CSV** : route `app/comptabilite/export/route.ts` (`;` + BOM UTF-8, période via `?annee=`) + bouton « ↓ CSV » sur la page compta — **M**
 - [x] **Date + motif de décès** : colonnes `dateDeces`/`motifDeces` (migration additive `20260717170000_deces`), service `marquerMort`, action `marquerMortAction` (form + Zod), `components/deces-form.tsx`, affichage sur la fiche. Motifs dans `lib/constants.ts` (`MOTIFS_DECES`) — **M**
@@ -143,7 +143,8 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [ ] **Factoriser la duplication restante** — _partiellement fait_ :
   - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
   - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)
-  - [ ] helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation `bilanAnnuel`/`bilanGlobal`, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
+  - [x] helpers de tri `hrefTri`/`fleche` unifiés dans `lib/utils.ts` (`lienTri`, `flecheTri`) — utilisés par `troupeau` et `ventes`
+  - [ ] boucles d'agrégation `bilanAnnuel`/`bilanGlobal`, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
 
 ---
 

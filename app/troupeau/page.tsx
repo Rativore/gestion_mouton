@@ -7,7 +7,7 @@ import {
 import { listerEspeces, libelleEspece } from "@/lib/services/especes";
 import { PageHeader, Badge, EmptyState, LinkButton } from "@/components/ui";
 import { SEXES, STATUTS, labelDe, emojiEspece } from "@/lib/constants";
-import { calculerAge, cn } from "@/lib/utils";
+import { calculerAge, cn, lienTri, flecheTri } from "@/lib/utils";
 
 type Tri = "numero" | "age" | "sexe";
 const ONGLET_SORTIS = "sortis";
@@ -70,24 +70,16 @@ export default async function TroupeauPage({
   });
 
   // Liens conservant l'onglet, la recherche et le tri courants.
-  const base = new URLSearchParams();
-  base.set("onglet", onglet);
-  if (recherche) base.set("recherche", recherche);
-
   const hrefOnglet = (o: string) => {
     const p = new URLSearchParams();
     p.set("onglet", o);
     if (recherche) p.set("recherche", recherche);
     return `/troupeau?${p.toString()}`;
   };
-  const hrefTri = (col: Tri) => {
-    const p = new URLSearchParams(base);
-    p.set("tri", col);
-    p.set("ordre", tri === col && ordre === "asc" ? "desc" : "asc");
-    return `/troupeau?${p.toString()}`;
-  };
-  const fleche = (col: Tri) =>
-    tri === col ? (ordre === "asc" ? " ↑" : " ↓") : "";
+  const paramsTri = { onglet, ...(recherche ? { recherche } : {}) };
+  const hrefTri = (col: Tri) =>
+    lienTri("/troupeau", paramsTri, col, tri, ordre, "asc");
+  const fleche = (col: Tri) => flecheTri(col, tri, ordre);
 
   // La colonne Statut n'a de sens que pour les bêtes sorties du troupeau.
   const montrerStatut = onglet === ONGLET_SORTIS;

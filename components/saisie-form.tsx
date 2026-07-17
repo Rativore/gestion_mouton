@@ -260,6 +260,7 @@ export function SaisieForm({
                   id="poids"
                   name="poids"
                   type="number"
+                  inputMode="decimal"
                   step="0.1"
                   min="0"
                   className="field"
@@ -313,6 +314,7 @@ export function SaisieForm({
             id="montant"
             name="montant"
             type="number"
+            inputMode="decimal"
             step="0.01"
             min="0"
             required

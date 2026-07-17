@@ -29,6 +29,33 @@ export function creerFmt(devise: string) {
   return (montant: number | null | undefined) => formatMontant(montant, devise);
 }
 
+/**
+ * Lien de tri d'un tableau : bascule le sens si la colonne est déjà active,
+ * sinon applique `ordreParDefaut`. Conserve les paramètres passés (`params`).
+ * Utilisé par les pages troupeau et ventes.
+ */
+export function lienTri(
+  base: string,
+  params: Record<string, string>,
+  col: string,
+  triActuel: string,
+  ordre: string,
+  ordreParDefaut: "asc" | "desc" = "asc",
+): string {
+  const p = new URLSearchParams(params);
+  p.set("tri", col);
+  p.set(
+    "ordre",
+    col === triActuel ? (ordre === "asc" ? "desc" : "asc") : ordreParDefaut,
+  );
+  return `${base}?${p.toString()}`;
+}
+
+/** Flèche (↑/↓) indiquant le tri courant, ou "" si la colonne n'est pas triée. */
+export function flecheTri(col: string, triActuel: string, ordre: string): string {
+  return col === triActuel ? (ordre === "asc" ? " ↑" : " ↓") : "";
+}
+
 const dateFormatter = new Intl.DateTimeFormat("fr-FR", {
   day: "2-digit",
   month: "2-digit",
