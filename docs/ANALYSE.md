@@ -131,9 +131,11 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [ ] Recette finale sur téléphone : connexion (valide `DATABASE_URL`/pooler depuis Vercel) + « Ajouter à l'écran d'accueil » — _à confirmer par l'utilisateur_ — **S**
 
 ### Phase F — Finitions & robustesse (en continu, après mise en ligne)
+- [x] **Sécurité — `requireUser()` dans chaque Server Action** (14 actions, `lib/auth.ts`) : défense en profondeur au-dessus du proxy — **S**
+- [x] Recherche `mode: "insensitive"` (Postgres sensible à la casse) — **S**
+- [x] Suppression d'un animal vendu **sécurisée** : la vente liée et son mouvement de gain sont supprimés dans la transaction avant l'animal (sinon violation de clé étrangère) — **S**
 - [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
 - [ ] Montants **`Float → Decimal`** (schéma + services + formatage) avant compta « sérieuse » — **M**
-- [ ] Recherche `mode: "insensitive"` ; sécuriser la suppression d'un animal vendu — **S**
 - [ ] **Zod** sur les Server Actions + messages d'erreur clairs — **M**
 - [ ] Export comptable (CSV / PDF), tableau de bord enrichi, date/motif de décès — **M**
 - [ ] **Factoriser la duplication restante** (repérée au tri du 17/07, laissée car non testable hors ligne) : helper de formatage `fmt` (répété dans 4 pages), helpers de tri `hrefTri`/`fleche` (`troupeau` + `ventes`), boucles d'agrégation quasi identiques `bilanAnnuel`/`bilanGlobal`, type `EtatFormulaire` redéclaré dans les 6 actions, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
@@ -149,6 +151,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase F (1) : sécurité & fiabilité
+- **🔒 `requireUser()` dans les 14 Server Actions** (`lib/auth.ts`). Le proxy couvre déjà les POST des actions, mais cette vérification en tête de chaque action est une défense en profondeur (au cas où le `matcher` du proxy changerait). Non appliqué à `auth.ts` (connexion/déconnexion).
+- **🔍 Recherche insensible à la casse.** `listerAnimaux` : ajout de `mode: "insensitive"` sur les `contains` (numéro/race/note) — Postgres est sensible à la casse par défaut. Vérifié : « zebu » trouve « ZEBU-TEST » (1) alors que sans le mode → 0.
+- **🗑️ Suppression d'un animal vendu.** `supprimerAnimal` supprime désormais la vente liée **et** son mouvement de gain dans la transaction avant l'animal. Sans ça, la clé étrangère `Vente.animalId` (sans `onDelete`) faisait échouer la suppression. Vérifié : `delete` direct échoue (FK reproduit), séquence corrective supprime tout sans orphelin.
+- **✅** `tsc` + build prod OK ; deux correctifs validés par probe contre Supabase.
+- **➡️ Reste en Phase F** : Zod sur les actions, passe mobile-first, `Float → Decimal`, exports/décès, factorisation.
 
 ### 2026-07-17 (réseau perso) — Phase E : app déployée sur Vercel 🚀
 - **🌐 En ligne : https://gestion-mouton.vercel.app** Repo GitHub branché sur Vercel, 5 variables d'env renseignées (`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`). Build `prisma generate && next build` (ajout au `package.json` pour garantir un client Prisma à jour sur Vercel).

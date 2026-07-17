@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { vendreAnimal, annulerVente } from "@/lib/services/ventes";
 import { texteOptionnel, dateOptionnelle, nombreOptionnel } from "@/lib/utils";
+import { requireUser } from "@/lib/auth";
 
 export type EtatFormulaire = { error?: string };
 
@@ -10,6 +11,7 @@ export async function vendreAnimalAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
+  await requireUser();
   const animalId = texteOptionnel(formData.get("animalId"));
   const prix = nombreOptionnel(formData.get("prix"));
   const date = dateOptionnelle(formData.get("date"));
@@ -40,6 +42,7 @@ export async function vendreAnimalAction(
 }
 
 export async function annulerVenteAction(venteId: string) {
+  await requireUser();
   await annulerVente(venteId);
   revalidatePath("/ventes");
   revalidatePath("/troupeau");

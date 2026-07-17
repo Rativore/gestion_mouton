@@ -19,6 +19,7 @@ import {
   nombreOptionnel,
 } from "@/lib/utils";
 import { PERE_EXTERIEUR } from "@/lib/constants";
+import { requireUser } from "@/lib/auth";
 
 export type EtatFormulaire = { error?: string };
 
@@ -26,6 +27,7 @@ export async function enregistrerAnimalAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
+  await requireUser();
   const id = texteOptionnel(formData.get("id"));
   const numero = texteOptionnel(formData.get("numero"));
   const espece = texteOptionnel(formData.get("espece"));
@@ -102,12 +104,14 @@ export async function enregistrerAnimalAction(
 }
 
 export async function supprimerAnimalAction(id: string) {
+  await requireUser();
   await supprimerAnimal(id);
   revalidatePath("/troupeau");
   redirect("/troupeau");
 }
 
 export async function marquerMortAction(id: string) {
+  await requireUser();
   await majAnimal(id, { statut: "mort" });
   revalidatePath("/troupeau");
   revalidatePath(`/troupeau/${id}`);
@@ -117,6 +121,7 @@ export async function ajouterEvenementSanteAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
+  await requireUser();
   const animalId = texteOptionnel(formData.get("animalId"));
   const type = texteOptionnel(formData.get("type"));
   const date = dateOptionnelle(formData.get("date"));
@@ -137,6 +142,7 @@ export async function supprimerEvenementSanteAction(
   id: string,
   animalId: string,
 ) {
+  await requireUser();
   await supprimerEvenementSante(id);
   revalidatePath(`/troupeau/${animalId}`);
 }

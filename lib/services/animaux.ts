@@ -16,10 +16,11 @@ export async function listerAnimaux(filtre: FiltreAnimaux = {}) {
   if (filtre.statut) where.statut = filtre.statut;
   else if (filtre.statuts) where.statut = { in: filtre.statuts };
   if (filtre.recherche) {
+    // mode "insensitive" : PostgreSQL est sensible à la casse par défaut.
     where.OR = [
-      { numero: { contains: filtre.recherche } },
-      { race: { contains: filtre.recherche } },
-      { note: { contains: filtre.recherche } },
+      { numero: { contains: filtre.recherche, mode: "insensitive" } },
+      { race: { contains: filtre.recherche, mode: "insensitive" } },
+      { note: { contains: filtre.recherche, mode: "insensitive" } },
     ];
   }
   return prisma.animal.findMany({
@@ -209,14 +210,33 @@ export async function majAnimal(id: string, data: Prisma.AnimalUpdateInput) {
   return prisma.animal.update({ where: { id }, data });
 }
 
-/** Supprime un animal et sa dépense d'achat éventuelle. */
+/**
+ * Supprime un animal et les écritures comptables liées (dépense d'achat et/ou
+ * gain de vente). La vente éventuelle est supprimée d'abord : sans cela, la
+ * clé étrangère `Vente.animalId` bloquerait la suppression d'un animal vendu.
+ */
 export async function supprimerAnimal(id: string) {
   return prisma.$transaction(async (tx) => {
     const animal = await tx.animal.findUnique({
       where: { id },
-      select: { mouvementAchatId: true },
+      select: {
+        mouvementAchatId: true,
+        vente: { select: { id: true, mouvementId: true } },
+      },
     });
+
+    // Vente liée → supprimer la vente puis son mouvement de gain.
+    if (animal?.vente) {
+      await tx.vente.delete({ where: { id: animal.vente.id } });
+      if (animal.vente.mouvementId) {
+        await tx.mouvementComptable.delete({
+          where: { id: animal.vente.mouvementId },
+        });
+      }
+    }
+
     await tx.animal.delete({ where: { id } });
+
     if (animal?.mouvementAchatId) {
       await tx.mouvementComptable.delete({
         where: { id: animal.mouvementAchatId },

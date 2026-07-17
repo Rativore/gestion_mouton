@@ -8,6 +8,7 @@ import { ajouterCategorie, type TypeFlux } from "@/lib/services/categories";
 import { enregistrerPhoto } from "@/lib/upload";
 import { texteOptionnel, dateOptionnelle, nombreOptionnel } from "@/lib/utils";
 import { SOUS_TYPE_ANIMAL_PREFIX, SOUS_TYPE_AUTRE } from "@/lib/constants";
+import { requireUser } from "@/lib/auth";
 
 export type EtatFormulaire = { error?: string };
 
@@ -21,6 +22,7 @@ export async function enregistrerSaisieAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
+  await requireUser();
   const flux = texteOptionnel(formData.get("flux"));
   const sousType = texteOptionnel(formData.get("sousType"));
   const date = dateOptionnelle(formData.get("date"));

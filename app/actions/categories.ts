@@ -7,6 +7,7 @@ import {
   type TypeFlux,
 } from "@/lib/services/categories";
 import { texteOptionnel } from "@/lib/utils";
+import { requireUser } from "@/lib/auth";
 
 export type EtatFormulaire = { error?: string };
 
@@ -14,6 +15,7 @@ export async function ajouterCategorieAction(
   _prev: EtatFormulaire,
   formData: FormData,
 ): Promise<EtatFormulaire> {
+  await requireUser();
   const nom = texteOptionnel(formData.get("nom"));
   const typeFlux = texteOptionnel(formData.get("typeFlux"));
   if (!nom) return { error: "Le nom est obligatoire." };
@@ -30,6 +32,7 @@ export async function supprimerCategorieAction(
   nom: string,
   typeFlux: TypeFlux,
 ) {
+  await requireUser();
   await supprimerCategorie(nom, typeFlux);
   revalidatePath("/reglages");
   revalidatePath("/comptabilite");
