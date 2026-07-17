@@ -3,6 +3,8 @@
 Application de **gestion, traçabilité et comptabilité** d'un élevage de moutons / chèvres.
 Cible : une **PWA mobile simple, pour 2 utilisateurs**.
 
+🌐 **En ligne : https://gestion-mouton.vercel.app**
+
 **Stack :** Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Tailwind 4.
 
 ## Démarrage

@@ -123,11 +123,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 > **⚠️ Sécurité — durcissement Phase F** : la protection repose sur le proxy, qui couvre bien les Server Actions (POST sur leur route). La doc Next recommande en plus un `requireUser()` **dans chaque action** (défense en profondeur si le `matcher` change un jour). À ajouter en Phase F.
 > **Env Vercel (Phase E)** : `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY` (côté serveur) en plus des `DATABASE_URL`/`DIRECT_URL`/`SUPABASE_SECRET_KEY`.
 
-### Phase E — Déploiement Vercel
-- [ ] Brancher le repo GitHub `Rativore/gestion_mouton` sur Vercel — **S**
-- [ ] Variables d'environnement Vercel : `DATABASE_URL`, `DIRECT_URL` (+ clés Supabase) — **S**
-- [ ] Vérifier le **build** (`prisma generate` au build, `postinstall` si besoin) — **S**
-- [ ] Recette sur URL de prod depuis un téléphone — **S**
+### Phase E — Déploiement Vercel ✅ _(en ligne le 17/07)_
+- [x] Repo `Rativore/gestion_mouton` branché sur Vercel — **S**
+- [x] 5 variables d'env Vercel : `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY` — **S**
+- [x] Build OK (`prisma generate && next build`) — **S**
+- [x] **En ligne : https://gestion-mouton.vercel.app** — vérifié depuis l'extérieur (`/` → 307 `/login`, `/login`+manifest+icônes+`sw.js` en 200, bons types MIME). Le 307 prouve que le proxy joint Supabase Auth depuis Vercel (env auth OK) — **S**
+- [ ] Recette finale sur téléphone : connexion (valide `DATABASE_URL`/pooler depuis Vercel) + « Ajouter à l'écran d'accueil » — _à confirmer par l'utilisateur_ — **S**
 
 ### Phase F — Finitions & robustesse (en continu, après mise en ligne)
 - [ ] **Mobile-first** : passe sur les formulaires et la nav au pouce (tailles de cible, claviers adaptés) — **M**
@@ -148,6 +149,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-17 (réseau perso) — Phase E : app déployée sur Vercel 🚀
+- **🌐 En ligne : https://gestion-mouton.vercel.app** Repo GitHub branché sur Vercel, 5 variables d'env renseignées (`DATABASE_URL`, `DIRECT_URL`, `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SECRET_KEY`). Build `prisma generate && next build` (ajout au `package.json` pour garantir un client Prisma à jour sur Vercel).
+- **✅ Vérifié depuis l'extérieur** (curl) : `/` et routes protégées → 307 `/login` ; `/login`, `/manifest.webmanifest`, `/icon/192`, `/icon/512`, `/apple-icon`, `/sw.js` en 200 avec les bons types MIME. La redirection propre (pas de 500) confirme que le proxy atteint Supabase Auth depuis Vercel → variables auth correctes.
+- **👤 2 comptes créés** via l'API admin (confirmés), connexion validée pour les deux.
+- **➡️ Reste.** Recette téléphone par l'utilisateur (login → valide le pooler DB depuis Vercel ; « Ajouter à l'écran d'accueil » → PWA). Puis **Phase F** en continu.
 
 ### 2026-07-17 (réseau perso) — Phase D : authentification (Supabase Auth)
 - **🔐 App protégée par authentification.** Intégration `@supabase/ssr` : `lib/supabase/server.ts` (client lié aux cookies via `next/headers`) et `lib/supabase/proxy.ts` (refresh de session). Un `proxy.ts` racine redirige toute route vers `/login` sans session valide (`getUser()`), en laissant publics les assets, icônes, manifest et `sw.js`.

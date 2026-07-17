@@ -108,14 +108,15 @@ docs/                   Cette documentation
 **Phase A terminée** ✅ — `.env` basculé sur Supabase, migration baselinée, connexion app validée (lectures + écriture) depuis le réseau perso.
 **Phase B terminée** ✅ — photos uploadées vers **Supabase Storage** (bucket `animaux`), disque local abandonné → dernier verrou avant Vercel levé.
 **Phase C terminée** ✅ — **PWA** installable : manifest, icônes générées (192/512/apple), theme-color, service worker. Test « écran d'accueil » à faire sur mobile une fois en HTTPS.
-**Phase D terminée** ✅ — **authentification** (Supabase Auth email/mot de passe) : `proxy.ts` protège toutes les routes, page `/login`, déconnexion. Reste à créer les 2 comptes.
+**Phase D terminée** ✅ — **authentification** (Supabase Auth email/mot de passe) : `proxy.ts` protège toutes les routes, page `/login`, déconnexion. 2 comptes créés.
+**Phase E terminée** ✅ — **déployé sur Vercel** : https://gestion-mouton.vercel.app (5 variables d'env, build `prisma generate && next build`). Recette téléphone à confirmer.
 
 **Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
 1. ~~**Phase A** — finaliser la bascule Supabase~~ ✅ **faite**.
 2. ~~**Phase B** — photos → Supabase Storage~~ ✅ **faite**.
 3. ~~**Phase C** — PWA (installable, effet « app »)~~ ✅ **faite**.
-4. ~~**Phase D** — authentification 2 comptes (Supabase Auth)~~ ✅ **faite** (comptes à créer).
-5. **Phase E** 🎯 — **déploiement Vercel** (débloque le test PWA + auth sur mobile).
+4. ~~**Phase D** — authentification 2 comptes (Supabase Auth)~~ ✅ **faite**.
+5. ~~**Phase E** — déploiement Vercel~~ ✅ **faite** — https://gestion-mouton.vercel.app
 6. **Phases F+** — finitions mobile, `Float → Decimal`, exports, tests.
 
 **Points d'attention connus** (détaillés dans ANALYSE.md) :
