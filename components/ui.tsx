@@ -56,11 +56,20 @@ export function StatCard({
         ? "text-depense"
         : "text-foreground";
   return (
-    <Card className="flex flex-col gap-1">
+    <Card className="flex min-w-0 flex-col gap-1">
       <span className="text-xs font-medium uppercase tracking-wide text-muted">
         {label}
       </span>
-      <span className={cn("text-2xl font-bold", couleur)}>{valeur}</span>
+      {/* Taille adaptative : se réduit sur écran étroit ; en dernier recours,
+          un très grand nombre passe à la ligne au lieu de déborder de la case. */}
+      <span
+        className={cn(
+          "text-[clamp(1.125rem,5vw,1.5rem)] font-bold leading-tight tabular-nums [overflow-wrap:anywhere]",
+          couleur,
+        )}
+      >
+        {valeur}
+      </span>
     </Card>
   );
 }
