@@ -6,7 +6,14 @@ const formatteurs = new Map<string, Intl.NumberFormat>();
 function formatteurDevise(devise: string) {
   let f = formatteurs.get(devise);
   if (!f) {
-    f = new Intl.NumberFormat("fr-FR", { style: "currency", currency: devise });
+    f = new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: devise,
+      // Toujours 2 décimales : compact et homogène quelle que soit la devise
+      // (sinon TND en affiche 3 → « 1 234,500 TND », qui prend trop de place).
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
     formatteurs.set(devise, f);
   }
   return f;

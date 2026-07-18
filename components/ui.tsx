@@ -74,7 +74,7 @@ export function StatCard({
           un très grand nombre passe à la ligne au lieu de déborder de la case. */}
       <span
         className={cn(
-          "text-[clamp(1.125rem,5vw,1.5rem)] font-bold leading-tight tabular-nums [overflow-wrap:anywhere]",
+          "text-[clamp(1rem,4.2vw,1.375rem)] font-bold leading-tight tabular-nums [overflow-wrap:anywhere]",
           couleur,
         )}
       >
