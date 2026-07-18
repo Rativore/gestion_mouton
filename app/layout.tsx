@@ -27,6 +27,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   colorScheme: "light dark",
+  // Contenu bord à bord sous l'encoche : rend les safe-area insets exploitables
+  // (padding de l'en-tête et de la barre de nav en PWA iOS).
+  viewportFit: "cover",
   // Couleur de la barre du navigateur, adaptée au thème clair / sombre.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#3f7d3a" },

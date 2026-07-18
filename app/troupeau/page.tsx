@@ -105,14 +105,14 @@ export default async function TroupeauPage({
         }
       />
 
-      {/* Onglets par espèce + sortis */}
-      <div className="mb-4 flex gap-1 border-b border-border">
+      {/* Onglets par espèce + sortis (scroll horizontal si trop larges sur mobile) */}
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-border">
         {onglets.map((o) => (
           <Link
             key={o.key}
             href={hrefOnglet(o.key)}
             className={cn(
-              "-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+              "-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
               onglet === o.key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted hover:text-foreground",

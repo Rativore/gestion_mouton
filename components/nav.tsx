@@ -43,13 +43,13 @@ export function NavDesktop() {
 export function NavMobile() {
   const pathname = usePathname();
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface sm:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface pb-[env(safe-area-inset-bottom)] sm:hidden">
       {LIENS.map((l) => (
         <Link
           key={l.href}
           href={l.href}
           className={cn(
-            "flex flex-col items-center gap-0.5 py-2 text-[0.7rem] font-medium",
+            "flex min-h-[3.25rem] flex-col items-center justify-center gap-0.5 py-2 text-[0.7rem] font-medium",
             estActif(pathname, l.href) ? "text-primary" : "text-muted",
           )}
         >
