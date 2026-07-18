@@ -102,13 +102,14 @@ function agreger(
   return { gains, depenses, parCategorie };
 }
 
-/** Agrège gains/dépenses d'une année, mois par mois et par catégorie. */
-export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
-  const mouvements = await prisma.mouvementComptable.findMany({
-    where: { date: borneAnnee(annee) },
-    select: { date: true, typeFlux: true, montant: true, categorie: true },
-  });
-
+/**
+ * Calcul pur du bilan annuel à partir des mouvements déjà chargés (sans accès
+ * base) : sépare la logique métier du fetch Prisma → testable en isolation.
+ */
+export function calculerBilanAnnuel(
+  annee: number,
+  mouvements: LigneAgregat[],
+): BilanAnnuel {
   const parMois: BilanMensuel[] = Array.from({ length: 12 }, (_, i) => ({
     mois: i + 1,
     gains: 0,
@@ -137,6 +138,15 @@ export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
   };
 }
 
+/** Agrège gains/dépenses d'une année, mois par mois et par catégorie. */
+export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
+  const mouvements = await prisma.mouvementComptable.findMany({
+    where: { date: borneAnnee(annee) },
+    select: { date: true, typeFlux: true, montant: true, categorie: true },
+  });
+  return calculerBilanAnnuel(annee, mouvements);
+}
+
 export type BilanAnnee = {
   annee: number;
   gains: number;
@@ -152,12 +162,11 @@ export type BilanGlobal = {
   parCategorie: { typeFlux: string; categorie: string; total: number }[];
 };
 
-/** Agrège gains/dépenses sur toutes les années, année par année et par catégorie. */
-export async function bilanGlobal(): Promise<BilanGlobal> {
-  const mouvements = await prisma.mouvementComptable.findMany({
-    select: { date: true, typeFlux: true, montant: true, categorie: true },
-  });
-
+/**
+ * Calcul pur du bilan global à partir des mouvements déjà chargés (sans accès
+ * base) : sépare la logique métier du fetch Prisma → testable en isolation.
+ */
+export function calculerBilanGlobal(mouvements: LigneAgregat[]): BilanGlobal {
   const anneeMap = new Map<number, BilanAnnee>();
 
   const { gains, depenses, parCategorie } = agreger(
@@ -179,6 +188,14 @@ export async function bilanGlobal(): Promise<BilanGlobal> {
     .sort((a, b) => a.annee - b.annee);
 
   return { gains, depenses, solde: gains - depenses, parAnnee, parCategorie };
+}
+
+/** Agrège gains/dépenses sur toutes les années, année par année et par catégorie. */
+export async function bilanGlobal(): Promise<BilanGlobal> {
+  const mouvements = await prisma.mouvementComptable.findMany({
+    select: { date: true, typeFlux: true, montant: true, categorie: true },
+  });
+  return calculerBilanGlobal(mouvements);
 }
 
 export async function creerMouvement(data: {

@@ -75,7 +75,7 @@ Classés par sévérité. Références fichier entre parenthèses.
 
 ### ⚪ Améliorations (qualité)
 - **Validation** : entrées des Server Actions validées à la main → introduire **Zod** (schémas réutilisables, messages clairs).
-- **Tests** absents : cibler la logique critique (vente, achat, `bilanAnnuel`).
+- ~~**Tests** absents~~ ✅ : suite `node:test` + `tsx` (`npm test`) — 20 tests sur la logique pure critique (bilans, utils, validation, encodage PDF). Reste possible : tests d'intégration DB (vente/achat transactionnels).
 - **Énumérations en `String`** (statut, sexe, typeFlux…) : envisager des enums Prisma natifs sur Postgres.
 - Quelques modèles sans `updatedAt` (`Vente`, `MouvementComptable`).
 
@@ -159,6 +159,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-18 (réseau perso) — Phase F (8) : tests automatisés
+- **🧪 Première suite de tests.** `npm test` = `node --import tsx --test "test/**/*.test.ts"` (runner natif Node + `tsx` pour le TS/alias `@/`, aucune dépendance lourde). **20 tests, tous verts.**
+- **🎯 Cible : la logique pure critique.** Pour tester les bilans **sans base**, le calcul a été séparé du fetch Prisma : `calculerBilanAnnuel(annee, mouvements)` et `calculerBilanGlobal(mouvements)` (purs) ; `bilanAnnuel`/`bilanGlobal` ne font plus que fetch + délégation. Couverture : bilans (totaux, ventilation mois/année, tri par catégorie, cas vides, même libellé/type différent), `lib/utils` (formatMontant, calculerAge, nombreOptionnel, toDateInput, tri), `lib/validation` (nombrePositif/texteRequis/dateRequise, optionnels vides, clés ignorées) et `pdfSafe` + smoke test `construireBilanPdf` (PDF multi-pages valide).
+- **⏭️ Reste possible** : tests d'intégration DB pour les chemins transactionnels (vente/achat), qui nécessitent une base — hors périmètre de cette suite unitaire.
+- **✅** `tsc` + `eslint` + build prod OK ; `npm test` 20/20.
 
 ### 2026-07-18 (réseau perso) — Phase F (7) : factorisation (agrégations + formulaires)
 - **♻️ Agrégations compta.** `bilanAnnuel` et `bilanGlobal` partageaient la boucle de cumul (gains/dépenses + `Map` par catégorie). Extraite dans `agreger(mouvements, surMontant)` : parcours unique, la partie commune est mutualisée et le seau spécifique (par mois pour l'année, par année pour le global) est rempli via un callback. Comportement identique (mêmes tris).

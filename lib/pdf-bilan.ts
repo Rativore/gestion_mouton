@@ -38,7 +38,7 @@ export type MouvementPdf = {
  * `Intl.NumberFormat` avant le symbole monétaire) par une espace normale, puis
  * retire les caractères hors Latin-1 / WinAnsi (émojis d'une note libre, etc.).
  */
-function pdfSafe(s: string): string {
+export function pdfSafe(s: string): string {
   // Jeu de caractères encodables par la police standard (WinAnsi) hors Latin-1.
   const WINANSI_HORS_LATIN1 = new Set([
     0x20ac, 0x201a, 0x0192, 0x201e, 0x2026, 0x2020, 0x2021, 0x02c6, 0x2030,
