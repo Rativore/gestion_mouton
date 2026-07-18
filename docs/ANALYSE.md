@@ -160,6 +160,14 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 
 ## 6. Journal des évolutions
 
+### 2026-07-18 (réseau perso) — Correctif : upload photo (naissance/achat) plantait
+- **🐛 Symptôme.** Enregistrer une naissance avec une photo d'iPhone → page d'erreur générique Next (« A server error occurred »), **pas** l'erreur de validation inline.
+- **🔍 Cause.** Les **Server Actions Next sont plafonnées à 1 Mo** de corps de requête par défaut (`experimental.serverActions.bodySizeLimit`, confirmé dans les docs embarquées). Or `lib/upload.ts` acceptait jusqu'à 8 Mo : toute photo > 1 Mo (quasi toutes les photos de téléphone) était rejetée **au niveau framework**, avant d'atteindre le code de l'action.
+- **✅ Correctif.** (1) **Compression navigateur avant envoi** : nouveau `components/champ-photo.tsx` (`ChampPhoto`) redimensionne l'image (max 1600 px, JPEG q.82, orientation EXIF respectée) via `createImageBitmap` + `<canvas>`, et réinjecte le fichier allégé dans l'input via `DataTransfer` → l'envoi transporte ~quelques centaines de Ko. Utilisé par `animal-form` et `saisie-form`. (2) **Filet de sécurité** : `bodySizeLimit: "4mb"` dans `next.config.ts` (sous la limite plateforme Vercel ~4,5 Mo). En cas d'échec de compression, l'original (≤ ~4 Mo) passe quand même.
+- **✅** `tsc` + `eslint` + build prod OK.
+
+
+
 ### 2026-07-18 (réseau perso) — Phase F (8) : tests automatisés
 - **🧪 Première suite de tests.** `npm test` = `node --import tsx --test "test/**/*.test.ts"` (runner natif Node + `tsx` pour le TS/alias `@/`, aucune dépendance lourde). **20 tests, tous verts.**
 - **🎯 Cible : la logique pure critique.** Pour tester les bilans **sans base**, le calcul a été séparé du fetch Prisma : `calculerBilanAnnuel(annee, mouvements)` et `calculerBilanGlobal(mouvements)` (purs) ; `bilanAnnuel`/`bilanGlobal` ne font plus que fetch + délégation. Couverture : bilans (totaux, ventilation mois/année, tri par catégorie, cas vides, même libellé/type différent), `lib/utils` (formatMontant, calculerAge, nombreOptionnel, toDateInput, tri), `lib/validation` (nombrePositif/texteRequis/dateRequise, optionnels vides, clés ignorées) et `pdfSafe` + smoke test `construireBilanPdf` (PDF multi-pages valide).

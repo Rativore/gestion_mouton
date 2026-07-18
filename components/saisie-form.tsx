@@ -4,6 +4,7 @@ import { useState } from "react";
 import { enregistrerSaisieAction } from "@/app/actions/saisie";
 import { useFormulaire } from "@/lib/use-formulaire";
 import { SubmitButton } from "@/components/submit-button";
+import { ChampPhoto } from "@/components/champ-photo";
 import {
   MOTIFS_VENTE,
   SEXES,
@@ -206,13 +207,7 @@ export function SaisieForm({
             <label className="label" htmlFor="photo">
               Photo
             </label>
-            <input
-              id="photo"
-              name="photo"
-              type="file"
-              accept="image/*"
-              className="field"
-            />
+            <ChampPhoto />
           </div>
         </div>
       )}

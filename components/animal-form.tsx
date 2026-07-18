@@ -5,6 +5,7 @@ import Link from "next/link";
 import { enregistrerAnimalAction } from "@/app/actions/animaux";
 import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
+import { ChampPhoto } from "@/components/champ-photo";
 import { SEXES, ORIGINES, PERE_EXTERIEUR } from "@/lib/constants";
 import { toDateInput } from "@/lib/utils";
 
@@ -176,13 +177,7 @@ export function AnimalForm({
             <label className="label" htmlFor="photo">
               Photo {edition && initial.photoUrl && "(laisser vide pour garder l'actuelle)"}
             </label>
-            <input
-              id="photo"
-              name="photo"
-              type="file"
-              accept="image/*"
-              className="field"
-            />
+            <ChampPhoto />
           </div>
         </div>
       </section>
