@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { enregistrerSaisieAction } from "@/app/actions/saisie";
-import type { EtatFormulaire } from "@/lib/validation";
+import { useFormulaire } from "@/lib/use-formulaire";
 import { SubmitButton } from "@/components/submit-button";
 import {
   MOTIFS_VENTE,
@@ -35,11 +35,6 @@ export function SaisieForm({
   categoriesVente: string[];
   initialAnimalId?: string;
 }) {
-  const [state, formAction] = useActionState<EtatFormulaire, FormData>(
-    enregistrerSaisieAction,
-    {},
-  );
-
   const animalInitial = initialAnimalId
     ? animaux.find((a) => a.id === initialAnimalId)
     : undefined;
@@ -48,14 +43,10 @@ export function SaisieForm({
   const [sousType, setSousType] = useState(
     animalInitial ? SOUS_TYPE_ANIMAL_PREFIX + animalInitial.espece : "",
   );
-  const ref = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (!state.error) {
-      ref.current?.reset();
-      setSousType("");
-    }
-  }, [state]);
+  const { state, formAction, ref } = useFormulaire(enregistrerSaisieAction, () =>
+    setSousType(""),
+  );
 
   const estAnimal = sousType.startsWith(SOUS_TYPE_ANIMAL_PREFIX);
   const especeAnimal = estAnimal

@@ -1,22 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
 import { ajouterEvenementSanteAction } from "@/app/actions/animaux";
-import type { EtatFormulaire } from "@/lib/validation";
+import { useFormulaire } from "@/lib/use-formulaire";
 import { SubmitButton } from "@/components/submit-button";
 import { TYPES_SANTE } from "@/lib/constants";
 
 export function SanteForm({ animalId }: { animalId: string }) {
-  const [state, formAction] = useActionState<EtatFormulaire, FormData>(
-    ajouterEvenementSanteAction,
-    {},
-  );
-  const ref = useRef<HTMLFormElement>(null);
-
-  // Réinitialise le formulaire après un ajout réussi.
-  useEffect(() => {
-    if (!state.error) ref.current?.reset();
-  }, [state]);
+  const { state, formAction, ref } = useFormulaire(ajouterEvenementSanteAction);
 
   return (
     <form

@@ -145,7 +145,8 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
   - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
   - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)
   - [x] helpers de tri `hrefTri`/`fleche` unifiés dans `lib/utils.ts` (`lienTri`, `flecheTri`) — utilisés par `troupeau` et `ventes`
-  - [ ] boucles d'agrégation `bilanAnnuel`/`bilanGlobal`, échafaudage `useActionState`/`useRef` des petits formulaires — **M**
+  - [x] boucles d'agrégation `bilanAnnuel`/`bilanGlobal` : parcours unique factorisé dans un helper `agreger(mouvements, surMontant)` (cumul gains/dépenses + répartition par catégorie communs ; le seau par mois/par année reste spécifique via callback)
+  - [x] échafaudage des petits formulaires : hook `useFormulaire(action, onSucces?)` dans `lib/use-formulaire.ts` (`useActionState` typé + reset après succès) — appliqué à `categorie`, `espece`, `sante`, `saisie` (les 4 redéclarations `useActionState`/`useRef`/`useEffect` supprimées)
 
 ---
 
@@ -158,6 +159,11 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-18 (réseau perso) — Phase F (7) : factorisation (agrégations + formulaires)
+- **♻️ Agrégations compta.** `bilanAnnuel` et `bilanGlobal` partageaient la boucle de cumul (gains/dépenses + `Map` par catégorie). Extraite dans `agreger(mouvements, surMontant)` : parcours unique, la partie commune est mutualisée et le seau spécifique (par mois pour l'année, par année pour le global) est rempli via un callback. Comportement identique (mêmes tris).
+- **♻️ Hook `useFormulaire`.** `lib/use-formulaire.ts` encapsule `useActionState<EtatFormulaire, FormData>` + `ref` + reset du `<form>` après succès, avec un `onSucces?` optionnel (nettoyage d'état local). Appliqué à `categorie-form`, `espece-form`, `sante-form` et `saisie-form` (le `setSousType("")` passe par `onSucces`). ⚠️ Lint `react-hooks/refs` : interdit de muter `ref.current` pendant le rendu → la closure `onSucces` est rafraîchie dans un `useEffect` dédié (et non en assignation directe).
+- **✅** `tsc` + `eslint` + build prod OK.
 
 ### 2026-07-18 (réseau perso) — Phase F (6) : export PDF du bilan
 - **📄 Export PDF comptable.** Route Handler `app/comptabilite/export-pdf/route.ts` (protégée par `requireUser`, `?annee=YYYY` ou `<toutes>`) + module `lib/pdf-bilan.ts` (`construireBilanPdf`). Document A4 : en-tête (période, date d'édition), 3 cartes de totaux colorées, répartition par catégorie, journal des mouvements paginé (en-tête de colonnes répété par page, pied de page « Page X / Y »). Bouton « ↓ PDF » à côté du CSV sur la page compta.

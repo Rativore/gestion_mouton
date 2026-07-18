@@ -1,20 +1,11 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
 import { ajouterCategorieAction } from "@/app/actions/categories";
-import type { EtatFormulaire } from "@/lib/validation";
+import { useFormulaire } from "@/lib/use-formulaire";
 import { SubmitButton } from "@/components/submit-button";
 
 export function CategorieForm({ typeFlux }: { typeFlux: "gain" | "depense" }) {
-  const [state, formAction] = useActionState<EtatFormulaire, FormData>(
-    ajouterCategorieAction,
-    {},
-  );
-  const ref = useRef<HTMLFormElement>(null);
-
-  useEffect(() => {
-    if (!state.error) ref.current?.reset();
-  }, [state]);
+  const { state, formAction, ref } = useFormulaire(ajouterCategorieAction);
 
   return (
     <form ref={ref} action={formAction} className="flex items-end gap-2">

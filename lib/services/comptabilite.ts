@@ -62,6 +62,46 @@ export type BilanAnnuel = {
   parCategorie: { typeFlux: string; categorie: string; total: number }[];
 };
 
+/** Une ligne minimale pour l'agrégation (montant encore en Decimal Prisma). */
+type LigneAgregat = {
+  date: Date;
+  typeFlux: string;
+  categorie: string;
+  montant: { toNumber(): number };
+};
+
+/**
+ * Parcours unique des mouvements : cumule gains/dépenses et la répartition par
+ * catégorie (partie commune à `bilanAnnuel` et `bilanGlobal`), et délègue à
+ * `surMontant` le remplissage du seau spécifique (par mois ou par année).
+ */
+function agreger(
+  mouvements: LigneAgregat[],
+  surMontant: (date: Date, typeFlux: string, montant: number) => void,
+) {
+  const categorieMap = new Map<string, number>();
+  let gains = 0;
+  let depenses = 0;
+
+  for (const m of mouvements) {
+    const montant = m.montant.toNumber();
+    if (m.typeFlux === "gain") gains += montant;
+    else depenses += montant;
+    const cle = `${m.typeFlux}::${m.categorie}`;
+    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + montant);
+    surMontant(m.date, m.typeFlux, montant);
+  }
+
+  const parCategorie = [...categorieMap.entries()]
+    .map(([cle, total]) => {
+      const [typeFlux, categorie] = cle.split("::");
+      return { typeFlux, categorie, total };
+    })
+    .sort((a, b) => b.total - a.total);
+
+  return { gains, depenses, parCategorie };
+}
+
 /** Agrège gains/dépenses d'une année, mois par mois et par catégorie. */
 export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
   const mouvements = await prisma.mouvementComptable.findMany({
@@ -76,32 +116,16 @@ export async function bilanAnnuel(annee: number): Promise<BilanAnnuel> {
     solde: 0,
   }));
 
-  const categorieMap = new Map<string, number>();
-  let gains = 0;
-  let depenses = 0;
-
-  for (const m of mouvements) {
-    const montant = m.montant.toNumber();
-    const idx = m.date.getMonth();
-    if (m.typeFlux === "gain") {
-      parMois[idx].gains += montant;
-      gains += montant;
-    } else {
-      parMois[idx].depenses += montant;
-      depenses += montant;
-    }
-    const cle = `${m.typeFlux}::${m.categorie}`;
-    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + montant);
-  }
+  const { gains, depenses, parCategorie } = agreger(
+    mouvements,
+    (date, typeFlux, montant) => {
+      const idx = date.getMonth();
+      if (typeFlux === "gain") parMois[idx].gains += montant;
+      else parMois[idx].depenses += montant;
+    },
+  );
 
   for (const m of parMois) m.solde = m.gains - m.depenses;
-
-  const parCategorie = [...categorieMap.entries()]
-    .map(([cle, total]) => {
-      const [typeFlux, categorie] = cle.split("::");
-      return { typeFlux, categorie, total };
-    })
-    .sort((a, b) => b.total - a.total);
 
   return {
     annee,
@@ -135,39 +159,24 @@ export async function bilanGlobal(): Promise<BilanGlobal> {
   });
 
   const anneeMap = new Map<number, BilanAnnee>();
-  const categorieMap = new Map<string, number>();
-  let gains = 0;
-  let depenses = 0;
 
-  for (const m of mouvements) {
-    const montant = m.montant.toNumber();
-    const an = m.date.getFullYear();
-    let bilan = anneeMap.get(an);
-    if (!bilan) {
-      bilan = { annee: an, gains: 0, depenses: 0, solde: 0 };
-      anneeMap.set(an, bilan);
-    }
-    if (m.typeFlux === "gain") {
-      bilan.gains += montant;
-      gains += montant;
-    } else {
-      bilan.depenses += montant;
-      depenses += montant;
-    }
-    const cle = `${m.typeFlux}::${m.categorie}`;
-    categorieMap.set(cle, (categorieMap.get(cle) ?? 0) + montant);
-  }
+  const { gains, depenses, parCategorie } = agreger(
+    mouvements,
+    (date, typeFlux, montant) => {
+      const an = date.getFullYear();
+      let bilan = anneeMap.get(an);
+      if (!bilan) {
+        bilan = { annee: an, gains: 0, depenses: 0, solde: 0 };
+        anneeMap.set(an, bilan);
+      }
+      if (typeFlux === "gain") bilan.gains += montant;
+      else bilan.depenses += montant;
+    },
+  );
 
   const parAnnee = [...anneeMap.values()]
     .map((b) => ({ ...b, solde: b.gains - b.depenses }))
     .sort((a, b) => a.annee - b.annee);
-
-  const parCategorie = [...categorieMap.entries()]
-    .map(([cle, total]) => {
-      const [typeFlux, categorie] = cle.split("::");
-      return { typeFlux, categorie, total };
-    })
-    .sort((a, b) => b.total - a.total);
 
   return { gains, depenses, solde: gains - depenses, parAnnee, parCategorie };
 }
