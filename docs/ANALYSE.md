@@ -160,6 +160,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 
 ## 6. Journal des évolutions
 
+### 2026-07-18 (réseau perso) — Fluidité : écrans de chargement instantanés
+- **⚡ Perçu « figé » à la navigation.** Aucune page n'avait de `loading.tsx` : en tapant un lien, rien ne s'affichait tant que le serveur n'avait pas fini de charger les données (rendu dynamique + requêtes Supabase). Ajout de squelettes `loading.tsx` pour `/` (accueil), `/troupeau`, `/troupeau/[id]`, `/comptabilite`, `/ventes`, `/reglages` → feedback visuel immédiat (Suspense App Router), et permet le préchargement du squelette par `<Link>`. Primitive `Skeleton` (`components/ui.tsx`) + fragments réutilisables (`components/skeletons.tsx`).
+- **⏭️ Piste restante (auth).** Le proxy appelle `supabase.auth.getUser()` à **chaque** requête (aller-retour réseau Supabase avant le rendu). Optimisable via `getClaims()` (vérification locale du JWT si clés asymétriques) — touche l'authentification, à faire prudemment.
+- **✅** `tsc` + build prod OK.
+
+
+
 ### 2026-07-18 (réseau perso) — Correctif : upload photo (naissance/achat) plantait
 - **🐛 Symptôme.** Enregistrer une naissance avec une photo d'iPhone → page d'erreur générique Next (« A server error occurred »), **pas** l'erreur de validation inline.
 - **🔍 Cause.** Les **Server Actions Next sont plafonnées à 1 Mo** de corps de requête par défaut (`experimental.serverActions.bodySizeLimit`, confirmé dans les docs embarquées). Or `lib/upload.ts` acceptait jusqu'à 8 Mo : toute photo > 1 Mo (quasi toutes les photos de téléphone) était rejetée **au niveau framework**, avant d'atteindre le code de l'action.

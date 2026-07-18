@@ -21,6 +21,16 @@ export function PageHeader({
   );
 }
 
+/** Bloc gris animé pour les écrans de chargement (loading.tsx). */
+export function Skeleton({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn("animate-pulse rounded-md bg-border/70", className)}
+    />
+  );
+}
+
 export function Card({
   children,
   className,
