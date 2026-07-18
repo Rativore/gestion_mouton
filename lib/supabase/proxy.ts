@@ -32,11 +32,14 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // getUser() valide le token auprès de Supabase (à préférer à getSession
-  // côté serveur, qui ne vérifie pas la signature).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() vérifie le JWT — localement (via les clés asymétriques + WebCrypto)
+  // quand c'est possible, sinon repli automatique sur getUser(). Contrairement à
+  // getUser() (un aller-retour réseau à CHAQUE requête), la vérification locale
+  // évite un appel Supabase par navigation → pages nettement plus réactives.
+  // getClaims s'appuie sur getSession(), qui rafraîchit le jeton expiré et
+  // persiste les nouveaux cookies via setAll ci-dessus (session préservée).
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   return { response, user };
 }
