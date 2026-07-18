@@ -11,7 +11,7 @@ import {
   SOUS_TYPE_ANIMAL_PREFIX,
   SOUS_TYPE_AUTRE,
 } from "@/lib/constants";
-import { toDateInput } from "@/lib/utils";
+import { toDateInput, symboleDevise, formatMontant } from "@/lib/utils";
 
 type AnimalOption = {
   id: string;
@@ -29,13 +29,16 @@ export function SaisieForm({
   categoriesAchat,
   categoriesVente,
   initialAnimalId,
+  devise = "EUR",
 }: {
   animaux: AnimalOption[];
   especes: Espece[];
   categoriesAchat: string[];
   categoriesVente: string[];
   initialAnimalId?: string;
+  devise?: string;
 }) {
+  const symbole = symboleDevise(devise);
   const animalInitial = initialAnimalId
     ? animaux.find((a) => a.id === initialAnimalId)
     : undefined;
@@ -60,10 +63,10 @@ export function SaisieForm({
 
   const montantLabel =
     estAnimal && flux === "achat"
-      ? "Coût d'achat (€) *"
+      ? `Coût d'achat (${symbole}) *`
       : estAnimal && flux === "vente"
-        ? "Prix de vente (€) *"
-        : "Montant (€) *";
+        ? `Prix de vente (${symbole}) *`
+        : `Montant (${symbole}) *`;
   const dateLabel = estAnimal && flux === "achat" ? "Date d'entrée *" : "Date *";
 
   return (
@@ -232,7 +235,9 @@ export function SaisieForm({
                 {animauxEspece.map((a) => (
                   <option key={a.id} value={a.id}>
                     n°{a.numero}
-                    {a.coutAchat != null ? ` — acheté ${a.coutAchat} €` : ""}
+                    {a.coutAchat != null
+                      ? ` — acheté ${formatMontant(a.coutAchat, devise)}`
+                      : ""}
                   </option>
                 ))}
               </select>

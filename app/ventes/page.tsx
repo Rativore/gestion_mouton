@@ -191,6 +191,7 @@ export default async function AchatVentePage({
                 (c) => c !== CATEGORIE_VENTE_ANIMAL,
               )}
               initialAnimalId={sp.animal}
+              devise={devise}
             />
           </Card>
         </div>

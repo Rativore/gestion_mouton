@@ -30,6 +30,19 @@ export function creerFmt(devise: string) {
 }
 
 /**
+ * Symbole court d'une devise (€, $, CHF, £…) à partir de son code ISO, pour
+ * l'afficher dans un libellé de champ (ex. « Montant (€) »).
+ */
+export function symboleDevise(devise = "EUR"): string {
+  const parts = new Intl.NumberFormat("fr-FR", {
+    style: "currency",
+    currency: devise,
+    currencyDisplay: "narrowSymbol",
+  }).formatToParts(0);
+  return parts.find((p) => p.type === "currency")?.value ?? devise;
+}
+
+/**
  * Lien de tri d'un tableau : bascule le sens si la colonne est déjà active,
  * sinon applique `ordreParDefaut`. Conserve les paramètres passés (`params`).
  * Utilisé par les pages troupeau et ventes.

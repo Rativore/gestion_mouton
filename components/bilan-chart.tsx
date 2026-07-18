@@ -1,7 +1,15 @@
+import { formatMontant } from "@/lib/utils";
+
 export type PointGraphe = { label: string; gains: number; depenses: number };
 
 /** Histogramme gains/dépenses en CSS pur (par mois ou par année). */
-export function BilanChart({ points }: { points: PointGraphe[] }) {
+export function BilanChart({
+  points,
+  devise = "EUR",
+}: {
+  points: PointGraphe[];
+  devise?: string;
+}) {
   const max = Math.max(
     1,
     ...points.map((p) => Math.max(p.gains, p.depenses)),
@@ -14,7 +22,7 @@ export function BilanChart({ points }: { points: PointGraphe[] }) {
           <div
             key={p.label}
             className="flex flex-1 items-end justify-center gap-0.5"
-            title={`${p.label} — Gains ${p.gains} € / Dépenses ${p.depenses} €`}
+            title={`${p.label} — Gains ${formatMontant(p.gains, devise)} / Dépenses ${formatMontant(p.depenses, devise)}`}
           >
             <div
               className="w-full max-w-3 rounded-t bg-gain"

@@ -84,7 +84,7 @@ export default async function ComptabilitePage({
           <h2 className="mb-4 font-semibold">
             {toutes ? "Évolution par année" : `Évolution mensuelle ${annee}`}
           </h2>
-          <BilanChart points={points} />
+          <BilanChart points={points} devise={devise} />
         </Card>
 
         {bilan.parCategorie.length > 0 && (

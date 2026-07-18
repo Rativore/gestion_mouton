@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAnimal, listerParents } from "@/lib/services/animaux";
 import { listerEspeces } from "@/lib/services/especes";
+import { getDevise } from "@/lib/services/parametres";
 import { PageHeader } from "@/components/ui";
 import { AnimalForm } from "@/components/animal-form";
 
@@ -10,10 +11,11 @@ export default async function ModifierAnimalPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [animal, parents, especes] = await Promise.all([
+  const [animal, parents, especes, devise] = await Promise.all([
     getAnimal(id),
     listerParents(id),
     listerEspeces(),
+    getDevise(),
   ]);
   if (!animal) notFound();
 
@@ -41,7 +43,12 @@ export default async function ModifierAnimalPage({
   return (
     <>
       <PageHeader titre={`Modifier n°${animal.numero}`} />
-      <AnimalForm parents={parents} especes={especes} initial={initial} />
+      <AnimalForm
+        parents={parents}
+        especes={especes}
+        initial={initial}
+        devise={devise}
+      />
     </>
   );
 }

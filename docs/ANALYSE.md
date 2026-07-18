@@ -160,6 +160,13 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 
 ## 6. Journal des évolutions
 
+### 2026-07-18 (réseau perso) — Correctif : devise codée en dur dans certains libellés
+- **🐛 Symptôme.** Après changement de devise dans les Réglages, le formulaire Achat/Vente affichait toujours « Montant (€) ».
+- **✅ Correctif.** Nouveau helper `symboleDevise(code)` (`lib/utils.ts`, symbole court via `Intl` `narrowSymbol` : €, $, £, CHF, F CFA, TND). Les « € » codés en dur remplacés par le symbole de la devise dans `saisie-form` (libellés montant/coût/prix + prix d'un animal via `formatMontant`), `animal-form` (coût d'achat) et `bilan-chart` (infobulle). Devise passée en prop depuis les pages hôtes (`ventes`, `troupeau/[id]/modifier`, `comptabilite`). Les montants affichés ailleurs suivaient déjà la devise (`formatMontant`).
+- **✅** `tsc` + `eslint` + build prod OK.
+
+
+
 ### 2026-07-18 (réseau perso) — Fluidité : écrans de chargement instantanés
 - **⚡ Perçu « figé » à la navigation.** Aucune page n'avait de `loading.tsx` : en tapant un lien, rien ne s'affichait tant que le serveur n'avait pas fini de charger les données (rendu dynamique + requêtes Supabase). Ajout de squelettes `loading.tsx` pour `/` (accueil), `/troupeau`, `/troupeau/[id]`, `/comptabilite`, `/ventes`, `/reglages` → feedback visuel immédiat (Suspense App Router), et permet le préchargement du squelette par `<Link>`. Primitive `Skeleton` (`components/ui.tsx`) + fragments réutilisables (`components/skeletons.tsx`).
 - **⚡ Proxy sans appel réseau par navigation.** Le proxy appelait `supabase.auth.getUser()` à **chaque** requête (aller-retour réseau Supabase avant le rendu). Remplacé par `getClaims()` dans `lib/supabase/proxy.ts` : le projet signe ses JWT en **ES256 (asymétrique)**, donc `getClaims` vérifie la signature **localement** (WebCrypto + JWKS mis en cache) — plus d'appel réseau par navigation. Repli automatique sur `getUser()` si clés symétriques ou WebCrypto indisponible. Le rafraîchissement des jetons reste assuré (`getClaims` → `getSession` → `_callRefreshToken`, cookies persistés via `setAll`). `requireUser()` (Server Actions, écritures peu fréquentes) reste en `getUser()` (vérification serveur).

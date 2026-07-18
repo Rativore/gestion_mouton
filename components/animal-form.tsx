@@ -7,7 +7,7 @@ import type { EtatFormulaire } from "@/lib/validation";
 import { SubmitButton } from "@/components/submit-button";
 import { ChampPhoto } from "@/components/champ-photo";
 import { SEXES, ORIGINES, PERE_EXTERIEUR } from "@/lib/constants";
-import { toDateInput } from "@/lib/utils";
+import { toDateInput, symboleDevise } from "@/lib/utils";
 
 type ParentOption = {
   id: string;
@@ -40,12 +40,14 @@ export function AnimalForm({
   parents,
   especes,
   verrouillerNaissance = false,
+  devise = "EUR",
 }: {
   initial?: AnimalInitial;
   parents: ParentOption[];
   especes: { value: string; label: string }[];
   /** Ajout depuis le Troupeau : force une naissance (les achats passent par Achat/Vente). */
   verrouillerNaissance?: boolean;
+  devise?: string;
 }) {
   const [state, formAction] = useActionState<EtatFormulaire, FormData>(
     enregistrerAnimalAction,
@@ -220,7 +222,7 @@ export function AnimalForm({
           {estAchat && (
             <div>
               <label className="label" htmlFor="coutAchat">
-                Coût d&apos;achat (€)
+                Coût d&apos;achat ({symboleDevise(devise)})
               </label>
               <input
                 id="coutAchat"
