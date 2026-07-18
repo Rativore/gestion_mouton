@@ -139,7 +139,8 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] Montants **`Float → Decimal`** : `coutAchat`, `prix`, `poids`, `prixAuKilo`, `marge`, `montant` en `Decimal` (migration `20260717180000_montants_decimal`). Conversion `Decimal → number` **confinée à la couche services** (rien en Decimal ne sort des services → pages, formatage et composants clients inchangés). Frontières client garanties par `tsc` (props typées `number`) — **M**
 - [x] **Export comptable CSV** : route `app/comptabilite/export/route.ts` (`;` + BOM UTF-8, période via `?annee=`) + bouton « ↓ CSV » sur la page compta — **M**
 - [x] **Date + motif de décès** : colonnes `dateDeces`/`motifDeces` (migration additive `20260717170000_deces`), service `marquerMort`, action `marquerMortAction` (form + Zod), `components/deces-form.tsx`, affichage sur la fiche. Motifs dans `lib/constants.ts` (`MOTIFS_DECES`) — **M**
-- [ ] Export PDF, tableau de bord enrichi — **M**
+- [x] **Export PDF** du bilan comptable : route `app/comptabilite/export-pdf/route.ts` + module `lib/pdf-bilan.ts` (pdf-lib, polices standard embarquées → sûr en serverless). Totaux, répartition par catégorie, journal paginé. Bouton « ↓ PDF » à côté du CSV. — **M**
+- [ ] Tableau de bord enrichi — **M**
 - [ ] **Factoriser la duplication restante** — _partiellement fait_ :
   - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
   - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)
@@ -157,6 +158,12 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 ---
 
 ## 6. Journal des évolutions
+
+### 2026-07-18 (réseau perso) — Phase F (6) : export PDF du bilan
+- **📄 Export PDF comptable.** Route Handler `app/comptabilite/export-pdf/route.ts` (protégée par `requireUser`, `?annee=YYYY` ou `<toutes>`) + module `lib/pdf-bilan.ts` (`construireBilanPdf`). Document A4 : en-tête (période, date d'édition), 3 cartes de totaux colorées, répartition par catégorie, journal des mouvements paginé (en-tête de colonnes répété par page, pied de page « Page X / Y »). Bouton « ↓ PDF » à côté du CSV sur la page compta.
+- **🔤 Encodage sûr.** Génération avec **pdf-lib** (polices standard Helvetica embarquées → aucun accès disque, robuste en serverless Vercel). Helper `pdfSafe` : les polices standard utilisent l'encodage WinAnsi, qui ne couvre pas tout ; on remplace les espaces insécables/fines (dont **U+202F** qu'`Intl.NumberFormat` insère avant le symbole monétaire — sinon le séparateur de milliers saute) par une espace normale, et on retire les caractères non encodables (émojis d'une note libre). Le signe moins « − » (U+2212) → « - » ASCII.
+- **⚠️ Piège Windows évité.** Écrire un fichier `.ts` avec `Set-Content -Encoding utf8` (PowerShell 5.1) double-encode les accents (mojibake). Toujours passer par l'outil d'écriture (UTF-8 correct).
+- **✅** `tsc` + build prod OK (`ƒ /comptabilite/export-pdf`) ; PDF de démo (40 mouvements, 2 pages) **inspecté visuellement** : accents, montants « 12 345,60 € », troncatures « … », émoji retiré, pagination — tout correct.
 
 ### 2026-07-17 (réseau perso) — Phase F (5) : montants Float → Decimal
 - **💶 Compta exacte.** `Animal.coutAchat`, `Vente.{prix,poids,prixAuKilo,marge}`, `MouvementComptable.montant` passés de `Float` (double precision) à `Decimal` (`numeric`) — migration `20260717180000_montants_decimal` (ALTER TYPE avec USING, données préservées).
