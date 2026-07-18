@@ -9,6 +9,7 @@ _Objectif du document : évaluer l'état du code et définir le chemin vers une 
 ## 1. Architecture actuelle
 
 Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · PostgreSQL (Supabase) · Tailwind 4**.
+Auth : **Supabase Auth** (`@supabase/ssr`, proxy). Divers : **pdf-lib** (export PDF), **Zod** (validation), **node:test + tsx** (tests).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -58,26 +59,25 @@ Stack : **Next.js 16 (App Router) · React 19 · TypeScript · Prisma 6 · Postg
 
 ## 3. Points faibles & risques ⚠️
 
-Classés par sévérité. Références fichier entre parenthèses.
+Classés par sévérité. La plupart des points d'origine sont **résolus** (Phases B→F) ;
+ils sont conservés (barrés) pour l'historique. Références fichier entre parenthèses.
 
-### 🔴 Bloquant pour le déploiement Vercel (à traiter en priorité)
-- **Stockage photos sur disque local** (`lib/upload.ts` → `public/uploads/`). Le système de fichiers de Vercel est **éphémère** : les photos seraient perdues à chaque redéploiement, et l'écriture y est de toute façon interdite en serverless. → **Supabase Storage** (bucket dédié, upload en HTTPS). C'est le chantier n°1 (Phase B).
+### ✅ Résolus
+- ~~**Stockage photos sur disque local**~~ → **Supabase Storage** (bucket `animaux`, `lib/upload.ts` + `lib/supabase.ts`). **Phase B.**
+- ~~**Aucune authentification**~~ → **Supabase Auth** + proxy (`proxy.ts`, `lib/supabase/*`), 2 comptes, données partagées. **Phase D.** Durci en Phase F (`requireUser()` dans chaque action).
+- ~~**Montants en `Float`**~~ → **`Decimal`** (migration `20260717180000_montants_decimal`, conversion confinée aux services). **Phase F.**
+- ~~**Recherche sensible à la casse**~~ → `mode: "insensitive"` (`lib/services/animaux.ts`). **Phase F.**
+- ~~**Suppression d'un animal vendu**~~ → la vente liée + son mouvement sont supprimés dans la transaction avant l'animal. **Phase F.**
+- ~~**Validation manuelle des Server Actions**~~ → **Zod** (`lib/validation.ts`, messages FR). **Phase F.**
+- ~~**Tests absents**~~ → suite `node:test` + `tsx` (`npm test`, 20 tests : bilans, utils, validation, encodage PDF). **Phase F.**
+- ~~**Upload photo > 1 Mo plantait**~~ → compression navigateur (`components/champ-photo.tsx`) + `bodySizeLimit`. **Phase F.**
 
-### 🟠 Requis avant la mise en ligne
-- **Aucune authentification.** Acceptable en local, requis dès que l'app est publique. Pour 2 utilisateurs : **Supabase Auth** (email/mot de passe), 2 comptes, données partagées (pas de multi-tenant). → Phase D.
-- **Secrets & env** : `.env` n'est pas versionné (OK). En prod, `DATABASE_URL`/`DIRECT_URL` (+ clés Supabase) passent par les variables d'environnement Vercel.
-- **Montants en `Float`** (`schema.prisma` : `coutAchat`, `prix`, `prixAuKilo`, `marge`, `montant`). La virgule flottante provoque des erreurs d'arrondi (`0.1+0.2≠0.3`). Tolérable pour un suivi simple, mais à passer en **`Decimal`** avant de s'appuyer sur les chiffres pour une compta « sérieuse ». → Phase F.
-
-### 🟡 À corriger (fiabilité)
-- **Recherche sensible à la casse sur PostgreSQL** (`lib/services/animaux.ts:18-24`, `contains`). SQLite était insensible par défaut, Postgres non. → ajouter `mode: "insensitive"`.
-- **Suppression d'un animal déjà vendu** : `Vente.animal` n'a pas de règle `onDelete`. Supprimer une bête vendue échouera (violation de clé étrangère). → définir un comportement explicite (interdire, ou cascader vers la vente).
-- **Gestion d'erreurs générique** (`app/actions/*.ts` : `catch {}`) : messages peu précis pour l'utilisateur.
-
-### ⚪ Améliorations (qualité)
-- **Validation** : entrées des Server Actions validées à la main → introduire **Zod** (schémas réutilisables, messages clairs).
-- ~~**Tests** absents~~ ✅ : suite `node:test` + `tsx` (`npm test`) — 20 tests sur la logique pure critique (bilans, utils, validation, encodage PDF). Reste possible : tests d'intégration DB (vente/achat transactionnels).
+### ⚪ Restants (non bloquants)
+- **Secrets & env** : `.env` non versionné (OK). En prod, tout passe par les variables d'environnement Vercel (voir §Phase E). _(rappel, pas un défaut)_
+- **Gestion d'erreurs** : améliorée (messages Zod côté formulaires), mais quelques `catch` d'actions restent génériques.
 - **Énumérations en `String`** (statut, sexe, typeFlux…) : envisager des enums Prisma natifs sur Postgres.
 - Quelques modèles sans `updatedAt` (`Vente`, `MouvementComptable`).
+- **Tests d'intégration DB** (chemins transactionnels vente/achat) : non couverts par la suite unitaire actuelle.
 
 ---
 
@@ -135,12 +135,16 @@ Objectif : une **PWA** installable sur téléphone, pour **2 utilisateurs**, hé
 - [x] Recherche `mode: "insensitive"` (Postgres sensible à la casse) — **S**
 - [x] Suppression d'un animal vendu **sécurisée** : la vente liée et son mouvement de gain sont supprimés dans la transaction avant l'animal (sinon violation de clé étrangère) — **S**
 - [x] **Zod** sur les Server Actions : helper `lib/validation.ts` (`valider` + schémas réutilisables) appliqué aux actions de formulaire (vente, santé, catégorie, espèce, animal, saisie) avec messages FR clairs. Les actions à simple `id` et `parametres` gardent leur validation triviale — **M**
-- [~] **Mobile-first** : `inputMode="decimal"` sur les champs numériques (coût, prix, poids, montant) → clavier numérique sur mobile. Cibles tactiles déjà correctes. (Passe visuelle plus poussée possible plus tard.) — **M**
+- [x] **Mobile-first (technique)** : `inputMode="decimal"` (clavier numérique), champs `.field` à **16px** (stop zoom iOS), `viewport-fit=cover` + **safe-area** (en-tête/nav sous encoche et barre home), onglets troupeau scrollables, cibles tactiles nav ≥ 52px, montants adaptatifs (StatCard : plus de débordement, police réduite, 2 décimales). Passe **esthétique** plus poussée = optionnelle plus tard. — **M**
 - [x] Montants **`Float → Decimal`** : `coutAchat`, `prix`, `poids`, `prixAuKilo`, `marge`, `montant` en `Decimal` (migration `20260717180000_montants_decimal`). Conversion `Decimal → number` **confinée à la couche services** (rien en Decimal ne sort des services → pages, formatage et composants clients inchangés). Frontières client garanties par `tsc` (props typées `number`) — **M**
 - [x] **Export comptable CSV** : route `app/comptabilite/export/route.ts` (`;` + BOM UTF-8, période via `?annee=`) + bouton « ↓ CSV » sur la page compta — **M**
 - [x] **Date + motif de décès** : colonnes `dateDeces`/`motifDeces` (migration additive `20260717170000_deces`), service `marquerMort`, action `marquerMortAction` (form + Zod), `components/deces-form.tsx`, affichage sur la fiche. Motifs dans `lib/constants.ts` (`MOTIFS_DECES`) — **M**
 - [x] **Export PDF** du bilan comptable : route `app/comptabilite/export-pdf/route.ts` + module `lib/pdf-bilan.ts` (pdf-lib, polices standard embarquées → sûr en serverless). Totaux, répartition par catégorie, journal paginé. Bouton « ↓ PDF » à côté du CSV. — **M**
+- [x] **Correctif upload photo** : les photos > 1 Mo plantaient (limite Server Actions). Compression navigateur avant envoi (`components/champ-photo.tsx` : 1600 px, JPEG q.82, orientation EXIF) + `bodySizeLimit: "4mb"` (`next.config.ts`). Utilisé par `animal-form` et `saisie-form`. — **M**
+- [x] **Fluidité** : écrans de chargement `loading.tsx` (accueil, troupeau, fiche, compta, ventes, réglages) via `Skeleton`/`components/skeletons.tsx` → feedback instantané ; proxy auth `getUser()` → **`getClaims()`** (JWT ES256 vérifié localement, plus d'aller-retour Supabase par navigation). — **M**
+- [x] **Devise suivie partout** : helper `symboleDevise()` ; « € » codé en dur remplacé par le symbole de la devise (saisie, fiche/modifier, graphe compta). Montants compacts : **2 décimales** partout (TND n'en montre plus 3). — **S**
 - [ ] Tableau de bord enrichi — **M**
+- [ ] Passe **esthétique** mobile optionnelle (cartes, refonte visuelle) — **M**
 - [ ] **Factoriser la duplication restante** — _partiellement fait_ :
   - [x] type `EtatFormulaire` centralisé dans `lib/validation.ts` (5 redéclarations supprimées ; composants + actions l'importent de là)
   - [x] helper de formatage `creerFmt(devise)` dans `lib/utils.ts` (remplace le lambda `fmt` répété dans 4 pages)

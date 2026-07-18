@@ -14,7 +14,7 @@ Point d'entrée de la doc du projet. **À lire en premier pour reprendre rapidem
 Application de **gestion, traçabilité et comptabilité** d'un élevage de moutons / chèvres :
 - **Troupeau** : fiche par animal (identité, filiation, santé, provenance, photo), onglets par espèce + « Vendus / Morts », liste triable.
 - **Achat / Vente** : point de saisie unique. Achat = dépense (rouge), Vente = gain (vert). Un achat/vente d'animal crée/sort la bête ET le mouvement comptable lié. Historique chronologique coloré.
-- **Comptabilité** : bilan par année (graphe mensuel) **ou toutes années confondues** (graphe par année) via le sélecteur, répartition par catégorie, journal des mouvements.
+- **Comptabilité** : bilan par année (graphe mensuel) **ou toutes années confondues** (graphe par année) via le sélecteur, répartition par catégorie, journal des mouvements, **exports CSV et PDF**.
 - **Réglages** : devise, espèces d'animaux, catégories de gains/dépenses.
 
 Cible : **application mobile (PWA) simple, pour 2 utilisateurs** (l'éleveur et un proche). Pas d'objectif de montée en charge — un outil personnel pour simplifier le suivi.
@@ -40,6 +40,7 @@ La base (`.env` → `DATABASE_URL` / `DIRECT_URL`) pointe sur **Supabase**. Le f
 
 Autres commandes utiles :
 ```bash
+npm test                   # tests unitaires (node:test + tsx)
 npx prisma studio          # explorer la base
 npx prisma migrate dev     # créer/appliquer une migration
 npm run build              # build de production
@@ -71,22 +72,35 @@ npm run build              # build de production
 ## 4. Structure du projet
 
 ```
+proxy.ts                Protection des routes (auth) — remplace middleware.ts (Next 16)
+next.config.ts          Config (dont serverActions.bodySizeLimit pour l'upload photo)
 app/
   page.tsx              Accueil (tableau de bord)
-  troupeau/             Liste, fiche [id], édition, + naissance
+  loading.tsx           Squelette de chargement (idem par route ci-dessous)
+  login/                Page de connexion
+  troupeau/             Liste, fiche [id], édition, + naissance (+ loading.tsx)
   ventes/               Page « Achat / Vente » (saisie + historique)
-  comptabilite/         Bilan annuel/mensuel (lecture seule)
+  comptabilite/         Bilan + exports :
+    export/route.ts       Export CSV
+    export-pdf/route.ts   Export PDF (via lib/pdf-bilan)
   reglages/             Devise, espèces, catégories
-  actions/*.ts          Server Actions (mutations)
+  actions/*.ts          Server Actions (mutations) — chacune protégée par requireUser()
+  manifest.ts, icon.tsx, apple-icon.tsx   PWA (manifest + icônes générées)
 lib/
   services/*.ts         Accès données Prisma (animaux, ventes, comptabilite,
                         categories, especes, parametres)
+  supabase/             Clients Supabase SSR : server.ts (cookies) + proxy.ts (session)
   constants.ts          Constantes métier (espèces défaut, catégories, devises…)
-  utils.ts              Formatage (montant, date, âge)
+  utils.ts              Formatage (montant, symbole devise, date, âge, tri)
+  validation.ts         Schémas Zod + helper valider() ; type EtatFormulaire
+  use-formulaire.ts     Hook des petits formulaires (useActionState + reset)
+  pdf-bilan.ts          Génération du PDF du bilan (pdf-lib)
+  auth.ts               requireUser() (garde des Server Actions)
   prisma.ts             Client Prisma singleton
   upload.ts             Upload des photos vers Supabase Storage (bucket animaux)
   supabase.ts           Client Supabase à clé secrète (server-only)
-components/*.tsx         UI (formulaires, nav, cartes, boutons…)
+components/*.tsx         UI (ui.tsx, nav, formulaires, champ-photo, skeletons…)
+test/*.test.ts          Tests unitaires (node:test + tsx) : bilans, utils, validation, pdf
 prisma/
   schema.prisma         Modèle de données
   migrations/           Migrations versionnées
@@ -97,29 +111,28 @@ docs/                   Cette documentation
 **Conventions** :
 - Lecture dans les Server Components via `lib/services` ; écriture via `app/actions` puis `revalidatePath`.
 - Valeurs par défaut (espèces, catégories) en code ; personnalisations en base — fusionnées à l'affichage.
-- Montants formatés via `formatMontant(n, devise)` ; devise lue par `getDevise()`.
+- Montants formatés via `formatMontant(n, devise)` (2 décimales) ; symbole via `symboleDevise(devise)` ; devise lue par `getDevise()`.
+- Le calcul des bilans est **séparé du fetch** (`calculerBilanAnnuel/Global` purs) → testable sans base.
+- Photos **compressées côté navigateur** avant l'upload (`components/champ-photo.tsx`).
 
 ---
 
 ## 5. État du projet
 
-**V1 fonctionnelle** ✅ — toutes les fonctionnalités ci-dessus marchent.
-**Base migrée sur PostgreSQL / Supabase** ✅ — schéma appliqué, tables créées (vides).
-**Phase A terminée** ✅ — `.env` basculé sur Supabase, migration baselinée, connexion app validée (lectures + écriture) depuis le réseau perso.
-**Phase B terminée** ✅ — photos uploadées vers **Supabase Storage** (bucket `animaux`), disque local abandonné → dernier verrou avant Vercel levé.
-**Phase C terminée** ✅ — **PWA** installable : manifest, icônes générées (192/512/apple), theme-color, service worker. Test « écran d'accueil » à faire sur mobile une fois en HTTPS.
-**Phase D terminée** ✅ — **authentification** (Supabase Auth email/mot de passe) : `proxy.ts` protège toutes les routes, page `/login`, déconnexion. 2 comptes créés.
-**Phase E terminée** ✅ — **déployé sur Vercel** : https://gestion-mouton.vercel.app (5 variables d'env, build `prisma generate && next build`). Recette téléphone à confirmer.
+**App en ligne et utilisée au quotidien** ✅ — https://gestion-mouton.vercel.app
 
-**Prochaines étapes** → plan détaillé dans [`docs/ANALYSE.md`](./ANALYSE.md). Résumé de la route vers l'usage mobile :
-1. ~~**Phase A** — finaliser la bascule Supabase~~ ✅ **faite**.
-2. ~~**Phase B** — photos → Supabase Storage~~ ✅ **faite**.
-3. ~~**Phase C** — PWA (installable, effet « app »)~~ ✅ **faite**.
-4. ~~**Phase D** — authentification 2 comptes (Supabase Auth)~~ ✅ **faite**.
-5. ~~**Phase E** — déploiement Vercel~~ ✅ **faite** — https://gestion-mouton.vercel.app
-6. **Phases F+** — finitions mobile, `Float → Decimal`, exports, tests.
+Phases A→E **terminées** (bascule Supabase, photos sur Storage, PWA installable, auth 2 comptes, déploiement Vercel). Détails et journal complet dans [`docs/ANALYSE.md`](./ANALYSE.md).
 
-**Points d'attention connus** (détaillés dans ANALYSE.md) :
-- ✅ ~~Photos sur disque local~~ → **Supabase Storage** (fait, verrou Vercel levé).
-- 🟠 Montants en `Float` → passer en `Decimal` avant compta « sérieuse ».
-- 🟡 Recherche sensible à la casse sur Postgres ; suppression d'un animal vendu à sécuriser.
+**Phase F (finitions & robustesse) — bien avancée** ✅ :
+- Sécurité : `requireUser()` dans chaque action, recherche insensible à la casse, suppression d'un animal vendu sécurisée.
+- Compta : montants **`Float → Decimal`** (2 décimales à l'affichage), **export CSV** et **export PDF**, date/motif de décès.
+- Qualité : validation **Zod**, factorisation (agrégations, hook `useFormulaire`), **tests** (`npm test`, 20 tests).
+- Mobile : `inputMode` numérique, champs 16px (stop zoom iOS), **safe-area**, onglets scrollables, montants adaptatifs, **compression photo** avant upload.
+- Fluidité : **écrans de chargement** (`loading.tsx`) + proxy auth **local** (`getClaims`, plus d'appel réseau par navigation).
+- Devise suivie partout (plus de « € » codé en dur).
+
+**Reste (non urgent, quand l'envie vient)** :
+- Tableau de bord enrichi.
+- Passe **esthétique** mobile optionnelle (listes en cartes, refonte visuelle).
+- Tests d'intégration DB (chemins transactionnels).
+- Recette PWA « Ajouter à l'écran d'accueil » sur mobile (à confirmer par l'utilisateur).
